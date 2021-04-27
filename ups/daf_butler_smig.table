@@ -1,0 +1,4 @@
+setupRequired(daf_butler)
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
+envPrepend(DAF_BUTLER_PLUGINS, ${PRODUCT_DIR}/python/lsst/daf/butler_smig/cli/resources.yaml)

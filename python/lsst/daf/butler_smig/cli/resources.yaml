@@ -1,0 +1,7 @@
+cmd:
+  import: lsst.daf.butler_smig.cli.cmd
+  commands:
+    - smig-add-tree
+    - smig-history
+    - smig-revision
+    - smig-trees
