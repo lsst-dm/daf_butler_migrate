@@ -50,6 +50,24 @@ one_shot_option = click.option(
 
 verbose_option = click.option(
     "-v", "--verbose",
-    help="Print detailed information",
+    help="Print detailed information.",
+    is_flag=True
+)
+
+dry_run_option = click.option(
+    "-n", "--dry-run",
+    help="Do not execute actions, only report.",
+    is_flag=True
+)
+
+purge_option = click.option(
+    "--purge",
+    help="Remove existing version table before saving new versions.",
+    is_flag=True
+)
+
+sql_option = click.option(
+    "--sql",
+    help="Offline mode, dump SQL instead of executing migration on a database.",
     is_flag=True
 )

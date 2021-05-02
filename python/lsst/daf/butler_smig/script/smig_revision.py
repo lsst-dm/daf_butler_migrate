@@ -22,8 +22,11 @@
 """Dump configuration.
 """
 
+from __future__ import annotations
+
 import logging
 import os
+from typing import Optional
 
 from alembic import command, util
 from alembic.script import ScriptDirectory
@@ -32,6 +35,7 @@ from .. import config, smig
 
 
 _LOG = logging.getLogger(__name__.partition(".")[2])
+
 
 def _revision_exists(scripts, revision):
     try:

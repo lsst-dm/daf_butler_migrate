@@ -21,16 +21,19 @@
 
 import click
 
-# from lsst.daf.butler.cli.opt import repo_argument
+from lsst.daf.butler.cli.opt import repo_argument
 from lsst.daf.butler.cli.utils import ButlerCommand
 from ... import script
 from ..opt import (
     class_argument,
+    dry_run_option,
     mig_path_option,
     mig_path_exist_option,
     one_shot_option,
+    purge_option,
+    revision_argument,
+    sql_option,
     tree_name_argument,
-    tree_name_argument_optional,
     verbose_option,
     version_argument,
 )
@@ -39,9 +42,9 @@ from ..opt import (
 @click.command(short_help="Create new version tree.", cls=ButlerCommand)
 @mig_path_option
 @one_shot_option
-@tree_name_argument
+@tree_name_argument()
 def smig_add_tree(*args, **kwargs):
-    """Display version history for a tree.
+    """Create new version tree.
     """
     script.smig_add_tree(*args, **kwargs)
 
@@ -50,7 +53,7 @@ def smig_add_tree(*args, **kwargs):
 @verbose_option
 @mig_path_exist_option
 @one_shot_option
-@tree_name_argument_optional
+@tree_name_argument(required=False)
 def smig_history(*args, **kwargs):
     """Display version history for a tree.
     """
@@ -60,9 +63,9 @@ def smig_history(*args, **kwargs):
 @click.command(short_help="Create migration script for a new revision.", cls=ButlerCommand)
 @mig_path_exist_option
 @one_shot_option
-@tree_name_argument
-@class_argument
-@version_argument
+@tree_name_argument()
+@class_argument()
+@version_argument()
 def smig_revision(*args, **kwargs):
     """Create new revision.
     """
@@ -74,6 +77,50 @@ def smig_revision(*args, **kwargs):
 @mig_path_exist_option
 @one_shot_option
 def smig_trees(*args, **kwargs):
-    """Display version history for a tree.
+    """Print a list of known version trees.
     """
     script.smig_trees(*args, **kwargs)
+
+
+@click.command(short_help="Stamp revision table with current registry versions.", cls=ButlerCommand)
+@mig_path_exist_option
+@purge_option
+@dry_run_option
+@repo_argument(required=True)
+def smig_stamp(*args, **kwargs):
+    """Stamp revision table with current registry versions.
+    """
+    script.smig_stamp(*args, **kwargs)
+
+
+@click.command(short_help="Display current revisions for a database.", cls=ButlerCommand)
+@verbose_option
+@click.option("--butler", help="Display butler version numbers for managers.", is_flag=True)
+@mig_path_exist_option
+@repo_argument(required=True)
+def smig_current(*args, **kwargs):
+    """Display current revisions for a database.
+    """
+    script.smig_current(*args, **kwargs)
+
+
+@click.command(short_help="Upgrade schema to a specified revision.", cls=ButlerCommand)
+@mig_path_exist_option
+@sql_option
+@repo_argument(required=True)
+@revision_argument(required=True)
+def smig_upgrade(*args, **kwargs):
+    """Upgrade schema to a specified revision.
+    """
+    script.smig_upgrade(*args, **kwargs)
+
+
+@click.command(short_help="Downgrade schema to a specified revision.", cls=ButlerCommand)
+@mig_path_exist_option
+@sql_option
+@repo_argument(required=True)
+@revision_argument(required=True)
+def smig_downgrade(*args, **kwargs):
+    """Downgrade schema to a specified revision.
+    """
+    script.smig_downgrade(*args, **kwargs)

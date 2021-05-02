@@ -50,8 +50,9 @@ class SmigAlembicConfig(Config):
         mig_path : `str`
             Filesystem path to location of revision trees.
         """
-        cfg = cls(*args, **kwargs)
         alembic_folder = os.path.join(mig_path, "_alembic")
+        ini_path = os.path.join(alembic_folder, "alembic.ini")
+        cfg = cls(ini_path, *args, **kwargs)
         cfg.set_main_option("script_location", alembic_folder)
 
         version_locations = smig.version_locations(mig_path, one_shot)

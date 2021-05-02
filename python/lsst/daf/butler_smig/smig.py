@@ -21,10 +21,14 @@
 
 from __future__ import annotations
 
-from typing import List
-
 import os
 import uuid
+from typing import Dict, List, Mapping, Tuple
+
+import sqlalchemy
+
+from lsst.daf.butler import ButlerConfig
+from lsst.daf.butler.core.repoRelocation import replaceRoot
 
 
 _MIG_FOLDER_ENV = "DAF_BUTLER_SMIG_MIGRATIONS"
@@ -34,6 +38,7 @@ NS_UUID = uuid.UUID('840b31d9-05cd-5161-b2c8-00d32b280d0f')
 """Namespace UUID used for UUID5 generation. Do not change. This was
 produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
 """
+
 
 def migrations_folder() -> str:
     """Return default location of top-level folder containing all migrations.
@@ -78,6 +83,7 @@ def version_locations(mig_path: str, one_shot: bool = False) -> List[str]:
             names.append(os.path.join(mig_path, entry.name))
     return names
 
+
 def rev_id(*args: str) -> str:
     """Generate revision ID from arguments.
 
@@ -90,3 +96,73 @@ def rev_id(*args: str) -> str:
     """
     name = "-".join(args)
     return uuid.uuid5(NS_UUID, name).hex[-12:]
+
+
+def butler_db_url(repo: str) -> str:
+    """Extract registry database URL from Butler configuration.
+
+    Parameters
+    ----------
+    repo : `str`
+        Path to butler configuration YAML file or a directory containing a
+        "butler.yaml" file.
+
+    Returns
+    -------
+    db_url : `str`
+        URL for registry database.
+    """
+    butlerConfig = ButlerConfig(repo)
+    if "root" in butlerConfig:
+        butlerRoot = butlerConfig["root"]
+    else:
+        butlerRoot = butlerConfig.configDir
+    db_url = replaceRoot(butlerConfig["registry", "db"], butlerRoot)
+
+    return db_url
+
+
+def manager_versions(db_url: str) -> Mapping[str, Tuple[str, str]]:
+    """Retrieve current manager versions stored in butler_attributes table.
+
+    Parameters
+    ----------
+    db_url : `str`
+        URL for registry database.
+
+    Returns
+    -------
+    versions : `dict` [ `tuple` ]
+        Mapping whose key is manager name (e.g. "datasets") and value is a
+        tuple consisting of manager class name (including package/module) and
+        version in X.Y.Z format.
+    """
+    engine = sqlalchemy.engine.create_engine(db_url)
+
+    meta = sqlalchemy.schema.MetaData()
+    table = sqlalchemy.schema.Table(
+        "butler_attributes", meta,
+        sqlalchemy.schema.Column("name", sqlalchemy.Text),
+        sqlalchemy.schema.Column("value", sqlalchemy.Text),
+    )
+
+    # parse table contents into two separate maps
+    managers: Dict[str, str] = {}
+    versions: Dict[str, str] = {}
+    sql = sqlalchemy.sql.select([table.columns.name, table.columns.value])
+    with engine.connect() as connection:
+        result = connection.execute(sql)
+        for name, value in result:
+            if name.startswith("config:registry.managers."):
+                managers[name.rpartition(".")[-1]] = value
+            elif name.startswith("version:"):
+                versions[name.partition(":")[-1]] = value
+
+    # combine them into one structure
+    revisions: Dict[str, Tuple[str, str]] = {}
+    for manager, klass in managers.items():
+        version = versions.get(klass)
+        if version:
+            revisions[manager] = (klass, version)
+
+    return revisions

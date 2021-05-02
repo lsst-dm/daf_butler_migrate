@@ -19,28 +19,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Display current revisions for a database.
+"""
+
 from __future__ import annotations
 
-from lsst.daf.butler.cli.utils import MWArgumentDecorator
+import logging
 
-tree_name_argument = MWArgumentDecorator(
-    "tree-name",
-    help=("TREE_NAME is the revision tree name, usually it is the name "
-          "of a registry manager (e.g. 'datasets').")
-)
+from alembic import command
 
-class_argument = MWArgumentDecorator(
-    "manager-class",
-    help="MANAGER_CLASS is the name of the manager class, not including module name."
-)
+from .. import config, smig
 
-version_argument = MWArgumentDecorator(
-    "version",
-    help="VERSION is the version of manager class, typically in X.Y.Z notation."
-)
 
-revision_argument = MWArgumentDecorator(
-    "revision",
-    help=("REVISION is a target alembic revision, in offline mode it can also "
-          "specify initial revision using INITIAL:TARGET format.")
-)
+_LOG = logging.getLogger(__name__.partition(".")[2])
+
+
+def smig_downgrade(repo: str, revision: str, mig_path: str, sql: bool) -> None:
+    """Downgrade schema to a specified revision.
+
+    Parameters
+    ----------
+    repo : `str`
+        Path to butler configuration YAML file or a directory containing a
+        "butler.yaml" file.
+    revision : `str`
+        Target revision or colon-separated range for sql mode.
+    mig_path : `str`
+        Filesystem path to location of revisions.
+    sql : `bool`
+        If True dump SQL instead of executing migration on a database.
+    """
+    db_url = smig.butler_db_url(repo)
+
+    cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
+    cfg.set_main_option("sqlalchemy.url", db_url)
+
+    command.downgrade(cfg, revision, sql=sql)

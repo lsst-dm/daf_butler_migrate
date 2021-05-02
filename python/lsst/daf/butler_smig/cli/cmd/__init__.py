@@ -25,7 +25,11 @@ __all__ = [
 
 from .commands import (
     smig_add_tree,
+    smig_current,
+    smig_downgrade,
     smig_history,
     smig_revision,
+    smig_stamp,
     smig_trees,
+    smig_upgrade,
 )

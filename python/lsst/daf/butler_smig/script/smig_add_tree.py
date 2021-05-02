@@ -22,6 +22,8 @@
 """Dump configuration.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 
@@ -61,11 +63,10 @@ def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
 
     # If we need to call init then we want location of generated INI file
     # to be outside of current folder
-    alembic_folder = os.path.join(mig_path, "_alembic")
-    ini_path = os.path.join(alembic_folder, "alembic.ini-donotuse")
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, ini_path, extra_tree_name=extra_tree_name)
+    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, extra_tree_name=extra_tree_name)
 
     # may need to initialize the whole shebang
+    alembic_folder = os.path.join(mig_path, "_alembic")
     if not os.access(alembic_folder, os.F_OK):
 
         _LOG.debug("Creating new alembic folder %r", alembic_folder)

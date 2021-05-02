@@ -22,7 +22,11 @@
 """Dump configuration.
 """
 
-from alembic.script import ScriptDirectory
+from __future__ import annotations
+
+from typing import Dict
+
+from alembic.script import Script, ScriptDirectory
 
 from .. import config
 
@@ -43,16 +47,24 @@ def smig_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
     scripts = ScriptDirectory.from_config(cfg)
     bases = scripts.get_bases()
 
-    for name in sorted(bases):
+    bases_map: Dict[str, Script] = {}
+    for name in bases:
         revision = scripts.get_revision(name)
+        # Base revision has a random ID but its branch label is "<tree>"
+        branches = revision.branch_labels
+        if not branches:
+            branch = name
+        elif len(branches) == 1:
+            branch = branches.pop()
+        else:
+            # Multiple branch labels, usually means that there is one
+            # branch and "manager-ClassName" branch label "leaked" to the
+            # root. Just use shortest name, that should be sufficient.
+            _, branch = min((len(label), label) for label in branches)
+        bases_map[branch] = revision
+
+    for branch, revision in sorted(bases_map.items()):
         if verbose:
             print(revision.log_entry)
         else:
-            # the name of the base revision is "<tree>_root" but it also has a
-            # branch name "<tree>"
-            branches = revision.branch_labels
-            if len(branches) == 1:
-                branch = branches.pop()
-            else:
-                branch = name
             print(branch)

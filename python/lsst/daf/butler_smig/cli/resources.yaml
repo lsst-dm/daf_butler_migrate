@@ -2,6 +2,10 @@ cmd:
   import: lsst.daf.butler_smig.cli.cmd
   commands:
     - smig-add-tree
+    - smig-current
+    - smig-downgrade
     - smig-history
     - smig-revision
+    - smig-stamp
     - smig-trees
+    - smig-upgrade

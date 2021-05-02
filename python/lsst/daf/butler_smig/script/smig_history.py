@@ -22,6 +22,8 @@
 """Dump configuration.
 """
 
+from __future__ import annotations
+
 import os
 
 from alembic import command
