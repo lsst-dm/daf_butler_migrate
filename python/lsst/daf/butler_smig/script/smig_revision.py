@@ -66,12 +66,19 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
     ------
     LookupError
         Raised if given revision tree name does not exist.
+
+    
     """
     # class name should not include module name
     if "." in manager_class:
         raise ValueError(f"Manager class name {manager_class!r} must not include module name.")
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot=one_shot)
+    if one_shot:
+        # One-shot migrations use special logic
+        _smig_revision_one_shot(mig_path, tree_name, manager_class, version)
+        return
+
+    cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
 
     # make sure that tree root is defined
@@ -79,21 +86,15 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
     if not _revision_exists(scripts, root):
         raise LookupError(f"Revision tree {tree_name!r} does not exist.")
 
-    # We wanr to keep trees in separate directories
-    if one_shot:
-        tree_folder = os.path.join(mig_path, "_oneshot", tree_name)
-    else:
-        tree_folder = os.path.join(mig_path, tree_name)
+    # We want to keep trees in separate directories
+    tree_folder = os.path.join(mig_path, tree_name)
 
     # New revision should be either at the head of manager branch or at the
     # root of the tree (to make a new manager branch).
     manager_branch = f"{tree_name}-{manager_class}"
     branch_label: Optional[str] = None
     splice = False
-    if one_shot:
-        # one-shot revisions are always linear history on one branch
-        head = f"{tree_name}@head"
-    elif _revision_exists(scripts, manager_branch):
+    if _revision_exists(scripts, manager_branch):
         head = f"{manager_branch}@head"
     else:
         # make new branch
@@ -108,3 +109,30 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
     )
     command.revision(cfg, head=head, rev_id=rev_id, branch_label=branch_label,
                      splice=splice, version_path=tree_folder, message=message)
+
+
+def _smig_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
+                           version: str) -> None:
+
+    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name, one_shot=True)
+    scripts = ScriptDirectory.from_config(cfg)
+
+    # we need a manager name, this is a label of a tree root
+    bases = scripts.get_bases()
+    if not bases: 
+        raise LookupError(f"Revision tree {tree_name!r} does not exist (folder {tree_folder} is missing).")
+
+    # there could be only a single tree
+    assert len(bases) == 1
+
+    # Base revision has a random ID but its branch label is "<tree>"
+    branches = scripts.get_revision(bases[0]).branch_labels
+    assert len(branches) == 1
+    manager = branches.pop()
+
+    rev_id = smig.rev_id(manager, manager_class, version)
+    tree_folder = os.path.join(mig_path, "_oneshot", tree_name)
+    message = (
+        f"Migration script for {manager_class} {version}."
+    )
+    command.revision(cfg, head=f"{manager}@head", rev_id=rev_id, version_path=tree_folder, message=message)

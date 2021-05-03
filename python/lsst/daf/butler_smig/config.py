@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
+from typing import Any, Optional
 
 from alembic.config import Config
 
@@ -41,6 +41,7 @@ class SmigAlembicConfig(Config):
 
     @classmethod
     def from_mig_path(cls, mig_path: str, *args: Any,
+                      single_tree: Optional[str] = None,
                       extra_tree_name: str = "", one_shot: bool = False,
                       **kwargs: Any) -> SmigAlembicConfig:
         """Create new configuration object.
@@ -55,9 +56,15 @@ class SmigAlembicConfig(Config):
         cfg = cls(ini_path, *args, **kwargs)
         cfg.set_main_option("script_location", alembic_folder)
 
-        version_locations = smig.version_locations(mig_path, one_shot)
-        if extra_tree_name:
-            version_locations.append(os.path.join(mig_path, extra_tree_name))
+        if single_tree:
+            if one_shot:
+                version_locations = [os.path.join(mig_path, "_oneshot", single_tree)]
+            else:
+                version_locations = [os.path.join(mig_path, single_tree)]
+        else:
+            version_locations = smig.version_locations(mig_path, one_shot)
+            if extra_tree_name:
+                version_locations.append(os.path.join(mig_path, extra_tree_name))
         _LOG.debug("version_locations: %r", version_locations)
         cfg.set_main_option("version_locations", " ".join(version_locations))
 

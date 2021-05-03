@@ -35,7 +35,7 @@ from .. import config, smig
 _LOG = logging.getLogger(__name__.partition(".")[2])
 
 
-def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
+def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool, manager: str) -> None:
     """Add one more revision tree.
 
     Parameters
@@ -46,24 +46,48 @@ def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
         Filesystem path to location of revisions.
     one_shot : `bool`
         If `True` make tree for a special one-shot migrations.
+    manager : `str`
+        Registry manager name, if empty use tree name. Must be non-empty if
+        ``one_shot`` is True.
 
     Raises
     ------
     ValueError
         Raised if given revision tree name already exists.
+
+    Notes
+    -----
+    Regular trees are stored in per-manager directories just below the
+    top-level migration folder, e.g. "migrations/datasets/". One-shot trees
+    are stored inside "_oneshot" folder, one directory per tree, e.g.
+    "migrations/_oneshot/datasets-special-xyz/".
+
+    This call generates a root revision for a tree. Revision ID of the root is
+    generated based on manager name, which also means that one-shot revisions
+    revisions will conflict with regular trees and other one-shot trees. For
+    all trees the root of the tree is labelled with the manager name (e.g.
+    "datasets").
     """
 
+    if not manager:
+        if one_shot:
+            raise ValueError("--manager option is required with --one-shot")
+        manager = tree_name
+
     # check that its folder does not exist yet
-    extra_tree_name = tree_name
+    new_tree_loc = tree_name
     if one_shot:
-        extra_tree_name = os.path.join("_oneshot", tree_name)
-    tree_folder = os.path.join(mig_path, extra_tree_name)
+        new_tree_loc = os.path.join("_oneshot", tree_name)
+    tree_folder = os.path.join(mig_path, new_tree_loc)
     if os.access(tree_folder, os.F_OK):
         raise ValueError(f"Version tree {tree_name!r} already exists in {tree_folder}")
 
     # If we need to call init then we want location of generated INI file
     # to be outside of current folder
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, extra_tree_name=extra_tree_name)
+    if one_shot:
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name, one_shot=True)
+    else:
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, extra_tree_name=new_tree_loc)
 
     # may need to initialize the whole shebang
     alembic_folder = os.path.join(mig_path, "_alembic")
@@ -77,6 +101,6 @@ def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
 
     # create initial branch revision in a separate folder
     message = f"This is an initial pseudo-revision of the {tree_name!r} tree."
-    rev_id = smig.rev_id(tree_name)
-    command.revision(cfg, head="base", rev_id=rev_id, branch_label=tree_name,
+    rev_id = smig.rev_id(manager)
+    command.revision(cfg, head="base", rev_id=rev_id, branch_label=manager,
                      version_path=tree_folder, message=message)

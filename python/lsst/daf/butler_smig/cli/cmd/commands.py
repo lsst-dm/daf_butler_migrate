@@ -42,6 +42,7 @@ from ..opt import (
 @click.command(short_help="Create new version tree.", cls=ButlerCommand)
 @mig_path_option
 @one_shot_option
+@click.option("-m", "--manager", help="Manager name, default is to use tree name, but required for one-shot trees.")
 @tree_name_argument()
 def smig_add_tree(*args, **kwargs):
     """Create new version tree.
@@ -106,6 +107,7 @@ def smig_current(*args, **kwargs):
 
 @click.command(short_help="Upgrade schema to a specified revision.", cls=ButlerCommand)
 @mig_path_exist_option
+@one_shot_option
 @sql_option
 @repo_argument(required=True)
 @revision_argument(required=True)
@@ -117,6 +119,7 @@ def smig_upgrade(*args, **kwargs):
 
 @click.command(short_help="Downgrade schema to a specified revision.", cls=ButlerCommand)
 @mig_path_exist_option
+@one_shot_option
 @sql_option
 @repo_argument(required=True)
 @revision_argument(required=True)

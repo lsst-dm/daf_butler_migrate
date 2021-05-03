@@ -1,8 +1,8 @@
-"""Migration script for ByDimensionsDatasetRecordStorageManager 1.0.0.
+"""Migration script for ByDimensionsDatasetRecordStorageManagerUUID 1.0.0.
 
-Revision ID: f1faecdf9038
-Revises: be543f24dcba
-Create Date: 2021-05-02 17:28:36.465807
+Revision ID: 2101fbf51ad3
+Revises: 635083325f20
+Create Date: 2021-05-03 16:20:00.962934
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'f1faecdf9038'
-down_revision = 'be543f24dcba'
+revision = '2101fbf51ad3'
+down_revision = '635083325f20'
 branch_labels = None
 depends_on = None
 

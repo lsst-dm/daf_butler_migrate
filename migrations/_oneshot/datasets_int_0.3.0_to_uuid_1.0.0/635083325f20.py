@@ -1,8 +1,8 @@
-"""Migration script for ByNameOpaqueTableStorageManager 0.2.0.
+"""Migration script for ByDimensionsDatasetRecordStorageManager 1.0.0.
 
-Revision ID: 77e5b803ad3f
-Revises: 61f6b63d296d
-Create Date: 2021-05-03 16:19:51.712258
+Revision ID: 635083325f20
+Revises: 059cc7b7ef13
+Create Date: 2021-05-03 16:20:04.128065
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '77e5b803ad3f'
-down_revision = '61f6b63d296d'
+revision = '635083325f20'
+down_revision = '059cc7b7ef13'
 branch_labels = None
 depends_on = None
 

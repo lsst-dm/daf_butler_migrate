@@ -34,7 +34,7 @@ from .. import config, smig
 _LOG = logging.getLogger(__name__.partition(".")[2])
 
 
-def smig_upgrade(repo: str, revision: str, mig_path: str, sql: bool) -> None:
+def smig_upgrade(repo: str, revision: str, mig_path: str, one_shot: bool, sql: bool) -> None:
     """Upgrade schema to a specified revision.
 
     Parameters
@@ -46,12 +46,14 @@ def smig_upgrade(repo: str, revision: str, mig_path: str, sql: bool) -> None:
         Target revision or colon-separated range for sql mode.
     mig_path : `str`
         Filesystem path to location of revisions.
+    one_shot : `bool`
+        If `True` use a special one-shot migration.
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
     """
     db_url = smig.butler_db_url(repo)
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
+    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot=one_shot)
     cfg.set_main_option("sqlalchemy.url", db_url)
 
     command.upgrade(cfg, revision, sql=sql)
