@@ -42,7 +42,7 @@ class SmigAlembicConfig(Config):
     @classmethod
     def from_mig_path(cls, mig_path: str, *args: Any,
                       single_tree: Optional[str] = None,
-                      extra_tree_name: str = "", one_shot: bool = False,
+                      one_shot_tree: Optional[str] = None,
                       **kwargs: Any) -> SmigAlembicConfig:
         """Create new configuration object.
 
@@ -50,21 +50,29 @@ class SmigAlembicConfig(Config):
         ----------
         mig_path : `str`
             Filesystem path to location of revision trees.
+        single_tree : `str`, optional
+            If provided then Alembic will be configured with a single version
+            tree only. If it contains slash charater then it is assumed to be
+            one-shot tree.
+        one_shot_tree : `str`, optional
+            If this is given (and ``single_tree`` is not) then this tree will
+            replace regular version tree for corresponding manager. Tree name
+            must contain slash character separating manager name and tree name.
         """
         alembic_folder = os.path.join(mig_path, "_alembic")
         ini_path = os.path.join(alembic_folder, "alembic.ini")
         cfg = cls(ini_path, *args, **kwargs)
         cfg.set_main_option("script_location", alembic_folder)
 
+        smig_trees = smig.SmigTrees(mig_path)
         if single_tree:
-            if one_shot:
-                version_locations = [os.path.join(mig_path, "_oneshot", single_tree)]
+            if "/" in single_tree:
+                # means one-shot tree
+                version_locations = [smig_trees.one_shot_version_location(single_tree, relative=False)]
             else:
-                version_locations = [os.path.join(mig_path, single_tree)]
+                version_locations = [smig_trees.regular_version_location(single_tree, relative=False)]
         else:
-            version_locations = smig.version_locations(mig_path, one_shot)
-            if extra_tree_name:
-                version_locations.append(os.path.join(mig_path, extra_tree_name))
+            version_locations = smig_trees.version_locations(one_shot_tree, relative=False)
         _LOG.debug("version_locations: %r", version_locations)
         cfg.set_main_option("version_locations", " ".join(version_locations))
 

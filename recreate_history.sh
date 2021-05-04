@@ -42,11 +42,10 @@ butler smig-revision datastores MonolithicDatastoreRegistryBridgeManager 0.1.0
 butler smig-revision datastores MonolithicDatastoreRegistryBridgeManager 0.2.0
 
 # special one-shot history
-butler smig-add-tree --one-shot --manager datasets datasets_int_1.0.0_to_uuid_1.0.0
-butler smig-revision --one-shot datasets_int_1.0.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManager 1.0.0
-butler smig-revision --one-shot datasets_int_1.0.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManagerUUID 1.0.0
+butler smig-add-tree --one-shot datasets/int_1.0.0_to_uuid_1.0.0
+butler smig-revision --one-shot datasets/int_1.0.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManager 1.0.0
+butler smig-revision --one-shot datasets/int_1.0.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManagerUUID 1.0.0
 
-butler smig-add-tree --one-shot --manager datasets datasets_int_0.3.0_to_uuid_1.0.0
-butler smig-revision --one-shot datasets_int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManager 1.0.0
-butler smig-revision --one-shot datasets_int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManagerUUID 1.0.0
-
+butler smig-add-tree --one-shot datasets/int_0.3.0_to_uuid_1.0.0
+butler smig-revision --one-shot datasets/int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManager 0.3.0
+butler smig-revision --one-shot datasets/int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManagerUUID 1.0.0

@@ -29,23 +29,28 @@ from ... import smig
 mig_path_option = click.option(
     "--mig-path",
     type=click.Path(exists=False, file_okay=False, writable=True),
-    help="Top-level folder with migration scripts, default: " + smig.migrations_folder(),
+    help="Top-level folder with migration scripts, default: " + smig.SmigTrees.migrations_folder(),
     metavar='PATH',
-    default=smig.migrations_folder()
+    default=smig.SmigTrees.migrations_folder()
 )
 
 mig_path_exist_option = click.option(
     "--mig-path",
     type=click.Path(exists=True, file_okay=False, writable=True),
-    help="Top-level folder with migration scripts, default: " + smig.migrations_folder(),
+    help="Top-level folder with migration scripts, default: " + smig.SmigTrees.migrations_folder(),
     metavar='PATH',
-    default=smig.migrations_folder()
+    default=smig.SmigTrees.migrations_folder()
 )
 
 one_shot_option = click.option(
     "--one-shot",
     help="Use special one-shot history trees.",
     is_flag=True
+)
+
+one_shot_tree_option = click.option(
+    "--one-shot-tree",
+    help="Use special one-shot history tree instead of regular history."
 )
 
 verbose_option = click.option(

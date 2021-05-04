@@ -78,6 +78,10 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
         _smig_revision_one_shot(mig_path, tree_name, manager_class, version)
         return
 
+    # We want to keep trees in separate directories
+    smig_trees = smig.SmigTrees(mig_path)
+    tree_folder = smig_trees.regular_version_location(tree_name, relative=False)
+
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
 
@@ -85,9 +89,6 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
     root = smig.rev_id(tree_name)
     if not _revision_exists(scripts, root):
         raise LookupError(f"Revision tree {tree_name!r} does not exist.")
-
-    # We want to keep trees in separate directories
-    tree_folder = os.path.join(mig_path, tree_name)
 
     # New revision should be either at the head of manager branch or at the
     # root of the tree (to make a new manager branch).
@@ -114,13 +115,17 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
 def _smig_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
                            version: str) -> None:
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name, one_shot=True)
+    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     scripts = ScriptDirectory.from_config(cfg)
+
+    # We want to keep trees in separate directories
+    smig_trees = smig.SmigTrees(mig_path)
+    tree_folder = smig_trees.one_shot_version_location(tree_name, relative=False)
 
     # we need a manager name, this is a label of a tree root
     bases = scripts.get_bases()
     if not bases: 
-        raise LookupError(f"Revision tree {tree_name!r} does not exist (folder {tree_folder} is missing).")
+        raise LookupError(f"Revision tree {tree_name!r} does not exist.")
 
     # there could be only a single tree
     assert len(bases) == 1
@@ -131,7 +136,6 @@ def _smig_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
     manager = branches.pop()
 
     rev_id = smig.rev_id(manager, manager_class, version)
-    tree_folder = os.path.join(mig_path, "_oneshot", tree_name)
     message = (
         f"Migration script for {manager_class} {version}."
     )

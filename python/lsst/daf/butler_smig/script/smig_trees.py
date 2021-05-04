@@ -24,11 +24,12 @@
 
 from __future__ import annotations
 
+import os
 from typing import Dict
 
 from alembic.script import Script, ScriptDirectory
 
-from .. import config
+from .. import config, smig
 
 
 def smig_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
@@ -43,7 +44,11 @@ def smig_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
     one_shot : `bool`
         If `True` print locations for special one-shot migrations.
     """
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot=one_shot)
+    if one_shot:
+        _smig_trees_one_shot(mig_path, verbose)
+        return
+
+    cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
     bases = scripts.get_bases()
 
@@ -68,3 +73,27 @@ def smig_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
             print(revision.log_entry)
         else:
             print(branch)
+
+
+def _smig_trees_one_shot(mig_path: str, verbose: bool) -> None:
+
+    # one-shot trees are just folders in _oneshot folder
+
+    smig_trees = smig.SmigTrees(mig_path)
+
+    one_shot_locations = smig_trees.one_shot_locations()
+    tree_names = sorted(one_shot_locations.keys())
+
+    for entry in sorted(tree_names):
+
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=entry)
+        scripts = ScriptDirectory.from_config(cfg)
+
+        if verbose:
+            bases = scripts.get_bases()
+            if bases:
+                assert len(bases) == 1
+                revision = scripts.get_revision(bases[0])
+                print(revision.log_entry)
+        else:
+            print(entry)

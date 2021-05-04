@@ -28,7 +28,7 @@ import os
 
 from alembic import command
 
-from .. import config
+from .. import config, smig
 
 
 def smig_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool) -> None:
@@ -45,13 +45,28 @@ def smig_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool) -
     one_shot : `bool`
         If `True` make a special one-shot migration.
     """
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot=one_shot)
+    if one_shot:
+        _one_shot_smig_history(tree_name, mig_path, verbose)
+        return None
+
     # limit to a single location if tree name is given
     if tree_name:
-        if one_shot:
-            tree_path = os.path.join(mig_path, "_oneshot", tree_name)
-        else:
-            tree_path = os.path.join(mig_path, tree_name)
-        cfg.set_main_option("version_locations", tree_path)
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+    else:
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
 
     command.history(cfg, verbose=verbose)
+
+def _one_shot_smig_history(tree_name: str, mig_path: str, verbose: bool) -> None:
+
+    if tree_name:
+        # if tree name is given then nothing to do for us
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+        command.history(cfg, verbose=verbose)
+    else:
+
+        smig_trees = smig.SmigTrees(mig_path)
+        locations = smig_trees.one_shot_locations(relative=False)
+        for tree_name in locations.keys():
+            cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+            command.history(cfg, verbose=verbose)

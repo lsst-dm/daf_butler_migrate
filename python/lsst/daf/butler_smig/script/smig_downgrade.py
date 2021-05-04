@@ -34,7 +34,7 @@ from .. import config, smig
 _LOG = logging.getLogger(__name__.partition(".")[2])
 
 
-def smig_downgrade(repo: str, revision: str, mig_path: str, one_shot: bool, sql: bool) -> None:
+def smig_downgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool) -> None:
     """Downgrade schema to a specified revision.
 
     Parameters
@@ -46,12 +46,17 @@ def smig_downgrade(repo: str, revision: str, mig_path: str, one_shot: bool, sql:
         Target revision or colon-separated range for sql mode.
     mig_path : `str`
         Filesystem path to location of revisions.
+    one_shot_tree : `str`
+        Nфme of special one-shot tree, if empty use regular history.
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
     """
     db_url = smig.butler_db_url(repo)
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot=one_shot)
+    if one_shot_tree:
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=one_shot_tree, one_shot=True)
+    else:
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
 
     command.downgrade(cfg, revision, sql=sql)

@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Dict, List, Mapping, Tuple
+from typing import Dict, List, Mapping, Tuple, Optional
 
 import sqlalchemy
 
@@ -31,34 +31,14 @@ from lsst.daf.butler import ButlerConfig
 from lsst.daf.butler.core.repoRelocation import replaceRoot
 
 
-_MIG_FOLDER_ENV = "DAF_BUTLER_SMIG_MIGRATIONS"
-_SMIG_PACKAGE_ENV = "DAF_BUTLER_SMIG_DIR"
-
 NS_UUID = uuid.UUID('840b31d9-05cd-5161-b2c8-00d32b280d0f')
 """Namespace UUID used for UUID5 generation. Do not change. This was
 produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
 """
 
 
-def migrations_folder() -> str:
-    """Return default location of top-level folder containing all migrations.
-
-    Returns
-    -------
-    path : `str`
-        Location of top-level folder containing all migrations.
-    """
-    loc = os.environ.get(_MIG_FOLDER_ENV)
-    if loc:
-        return loc
-    loc = os.environ.get(_SMIG_PACKAGE_ENV)
-    if loc:
-        return os.path.join(loc, "migrations")
-    raise ValueError(f"None of {_MIG_FOLDER_ENV} or {_SMIG_PACKAGE_ENV} environment variables is defined")
-
-
-def version_locations(mig_path: str, one_shot: bool = False) -> List[str]:
-    """Return list of folders for version_locations.
+class SmigTrees:
+    """Class encapsulating the knowledge of directory structures used bt smig.
 
     Parameters
     ----------
@@ -66,22 +46,200 @@ def version_locations(mig_path: str, one_shot: bool = False) -> List[str]:
         Top-level folder with migrations.
     one_shot : `bool`
         If `True` return locations for special one-shot migrations.
-
-    Returns
-    -------
-    names : `list` [ `str` ]
-        String containing space-separated list of locations.
     """
-    names: List[str] = []
-    if one_shot:
-        mig_path = os.path.join(mig_path, "_oneshot")
-        # it may not exist, treat it as empty
-        if not os.access(mig_path, os.F_OK):
-            return names
-    for entry in os.scandir(mig_path):
-        if entry.is_dir() and entry.name not in ("_alembic", "_oneshot"):
-            names.append(os.path.join(mig_path, entry.name))
-    return names
+
+    _MIG_FOLDER_ENV = "DAF_BUTLER_SMIG_MIGRATIONS"
+    """Name of envvar that can be used to override location of top-level
+    migrations folder.
+    """
+
+    _SMIG_PACKAGE_ENV = "DAF_BUTLER_SMIG_DIR"
+    """Name of envvar for location of a package containing default migrations.
+    """
+
+    def __init__(self, mig_path: Optional[str] = None):
+        if mig_path is None:
+            self.mig_path = self.migrations_folder()
+        else:
+            self.mig_path = mig_path
+
+    @classmethod
+    def migrations_folder(cls) -> str:
+        """Return default location of top-level folder containing all migrations.
+
+        Returns
+        -------
+        path : `str`
+            Location of top-level folder containing all migrations.
+        """
+        loc = os.environ.get(cls._MIG_FOLDER_ENV)
+        if loc:
+            return loc
+        loc = os.environ.get(cls._SMIG_PACKAGE_ENV)
+        if loc:
+            return os.path.join(loc, "migrations")
+        raise ValueError(f"None of {cls._MIG_FOLDER_ENV} or {cls._SMIG_PACKAGE_ENV}"
+                         " environment variables is defined")
+
+    def alembic_folder(self, *, relative: bool = True) -> str:
+        """Return location of folder with alembic files.
+
+        Parameters
+        ----------
+        relative : `bool`
+            If True (default) then path relative to top-level folder is
+            returned.
+
+        Returns
+        -------
+        path : `str`
+            Path to a folder alembic files (env.py, etc.) will be stored, path
+            may not exist yet.
+        """
+        path = "_alembic"
+        if not relative:
+            path = os.path.join(self.mig_path, path)
+        return path
+
+    def regular_version_location(self, manager: str, *, relative: bool = True) -> str:
+        """Return location for regular migrations for a given manager.
+
+        Parameters
+        ----------
+        manager : `str`
+            Manager name (e.g. "datasets").
+        relative : `bool`
+            If True (default) then path relative to top-level folder is
+            returned.
+
+        Returns
+        -------
+        path : `str`
+            Path to a folder where migration scripts will be stored, path may
+            not exist yet.
+        """
+        path = manager
+        if not relative:
+            path = os.path.join(self.mig_path, path)
+        return path
+
+    def one_shot_version_location(self, one_shot_tree: str, *, relative: bool = True) -> str:
+        """Return location for one-shot migrations for a given manager.
+
+        Parameters
+        ----------
+        one_shot_tree : `str`
+            Name of a special one-shot tree, contains manager name and tree
+            name separated by slash.
+        relative : `bool`
+            If True (default) then path relative to top-level folder is
+            returned.
+
+        Returns
+        -------
+        path : `str`
+            Path to a folder where migration scripts will be stored, path may
+            not exist yet.
+        """
+        manager, _, tree_name = one_shot_tree.partition("/")
+        if not tree_name:
+            raise ValueError("one-shot tree name is missing slash: f{one_shot_tree}")
+        path = os.path.join("_oneshot", manager, tree_name)
+        if not relative:
+            path = os.path.join(self.mig_path, path)
+        return path
+
+    def regular_version_locations(self, *, relative: bool = True) -> Dict[str, str]:
+        """Return locations for regular migrations.
+
+        Parameters
+        ----------
+        relative : `bool`
+            If True (default) then locations relative to top-level folder are
+            returned.
+
+        Returns
+        -------
+        names : `dict` [ `str`, `str` ]
+            Dictionary where key is a manager name (e.g. "datasets") and value
+            is the location of a folder with migration scripts.
+        """
+        locations: Dict[str, str] = {}
+        for entry in os.scandir(self.mig_path):
+            if entry.is_dir() and entry.name not in ("_alembic", "_oneshot"):
+                path = entry.name
+                if not relative:
+                    path = os.path.join(self.mig_path, path)
+                locations[entry.name] = path
+        return locations
+
+    def one_shot_locations(self, manager: Optional[str] = None, *, relative: bool = True) -> Dict[str, str]:
+        """Return locations for one-shot migrations for specific manager.
+
+        Parameters
+        ----------
+        manager : `str`
+            Manager name (e.g. "datasets").
+        relative : `bool`
+            If True (default) then locations relative to top-level folder are
+            returned.
+
+        Returns
+        -------
+        names : `dict` [ `str`, `os.DirEntry` ]
+            Dictionary where key is a one-shot tree name and value is the
+            location of a folder with migration scripts.
+        """
+        locations: Dict[str, str] = {}
+
+        one_shot_loc = os.path.join(self.mig_path, "_oneshot")
+        if not os.access(one_shot_loc, os.F_OK):
+            return locations
+
+        if manager:
+            managers = [manager]
+        else:
+            managers = [entry.name for entry in  os.scandir(one_shot_loc) if entry.is_dir()]
+
+        for manager in managers:
+            rel_path = os.path.join("_oneshot", manager)
+            manager_path = os.path.join(self.mig_path, rel_path)
+            # it may not exist, treat it as empty
+            if not os.access(manager_path, os.F_OK):
+                continue
+            for entry in os.scandir(manager_path):
+                if entry.is_dir():
+                    path = os.path.join(rel_path, entry.name)
+                    if not relative:
+                        path = os.path.join(self.mig_path, path)
+                    locations[manager + "/" + entry.name] = path
+        return locations
+
+    def version_locations(self, one_shot_tree: Optional[str] = None, *, relative: bool = True) -> List[str]:
+        """Return list of folders for version_locations.
+
+        Parameters
+        ----------
+        one_shot_tree : `str`, optional
+            Name of a special one-shot tree to use instead of default tree for
+            corresponding manager, , contains manager name and tree name
+            separated by slash.
+        relative : `bool`
+            If True (default) then locations relative to top-level folder are
+            returned.
+
+        Returns
+        -------
+        names : `list` [ `str` ]
+            String containing space-separated list of locations.
+        """
+        locations = self.regular_version_locations(relative=relative)
+        if one_shot_tree:
+            manager, _, tree_name = one_shot_tree.partition("/")
+            if not tree_name:
+                raise ValueError("one-shot tree name is missing slash: f{one_shot_tree}")
+            locations[manager] = self.one_shot_version_location(one_shot_tree, relative=relative)
+        return list(locations.values())
 
 
 def rev_id(*args: str) -> str:
