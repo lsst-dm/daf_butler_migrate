@@ -54,7 +54,7 @@ def smig_downgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, 
     db_url = smig.butler_db_url(repo)
 
     if one_shot_tree:
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=one_shot_tree, one_shot=True)
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot_tree=one_shot_tree)
     else:
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)

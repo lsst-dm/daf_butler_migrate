@@ -97,7 +97,6 @@ def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
         template = "generic"
         command.init(cfg, directory=alembic_folder, template=template)
 
-
     # create initial branch revision in a separate folder
     message = f"This is an initial pseudo-revision of the {tree_name!r} tree."
     rev_id = smig.rev_id(manager)

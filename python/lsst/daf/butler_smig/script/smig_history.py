@@ -24,8 +24,6 @@
 
 from __future__ import annotations
 
-import os
-
 from alembic import command
 
 from .. import config, smig
@@ -56,6 +54,7 @@ def smig_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool) -
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
 
     command.history(cfg, verbose=verbose)
+
 
 def _one_shot_smig_history(tree_name: str, mig_path: str, verbose: bool) -> None:
 

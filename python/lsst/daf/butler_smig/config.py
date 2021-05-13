@@ -64,6 +64,9 @@ class SmigAlembicConfig(Config):
         cfg = cls(ini_path, *args, **kwargs)
         cfg.set_main_option("script_location", alembic_folder)
 
+        _LOG.debug("alembic_folder: %r, single_tree: %r, one_shot_tree: %r",
+                   alembic_folder, single_tree, one_shot_tree)
+
         smig_trees = smig.SmigTrees(mig_path)
         if single_tree:
             if "/" in single_tree:

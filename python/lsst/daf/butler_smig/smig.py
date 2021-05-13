@@ -38,7 +38,7 @@ produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
 
 
 class SmigTrees:
-    """Class encapsulating the knowledge of directory structures used bt smig.
+    """Class encapsulating the knowledge of directory structures used by smig.
 
     Parameters
     ----------
@@ -65,7 +65,8 @@ class SmigTrees:
 
     @classmethod
     def migrations_folder(cls) -> str:
-        """Return default location of top-level folder containing all migrations.
+        """Return default location of top-level folder containing all
+        migrations.
 
         Returns
         -------
@@ -199,7 +200,7 @@ class SmigTrees:
         if manager:
             managers = [manager]
         else:
-            managers = [entry.name for entry in  os.scandir(one_shot_loc) if entry.is_dir()]
+            managers = [entry.name for entry in os.scandir(one_shot_loc) if entry.is_dir()]
 
         for manager in managers:
             rel_path = os.path.join("_oneshot", manager)

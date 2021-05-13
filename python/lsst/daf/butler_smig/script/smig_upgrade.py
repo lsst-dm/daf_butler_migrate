@@ -47,14 +47,14 @@ def smig_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sq
     mig_path : `str`
         Filesystem path to location of revisions.
     one_shot_tree : `str`
-        Nфme of special one-shot tree, if empty use regular history.
+        Name of special one-shot tree, if empty use regular history.
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
     """
     db_url = smig.butler_db_url(repo)
 
     if one_shot_tree:
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=one_shot_tree, one_shot=True)
+        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot_tree=one_shot_tree)
     else:
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)

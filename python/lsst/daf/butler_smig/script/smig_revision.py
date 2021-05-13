@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Optional
 
 from alembic import command, util
@@ -66,8 +65,6 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
     ------
     LookupError
         Raised if given revision tree name does not exist.
-
-    
     """
     # class name should not include module name
     if "." in manager_class:
@@ -113,7 +110,7 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
 
 
 def _smig_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
-                           version: str) -> None:
+                            version: str) -> None:
 
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     scripts = ScriptDirectory.from_config(cfg)
@@ -124,7 +121,7 @@ def _smig_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
 
     # we need a manager name, this is a label of a tree root
     bases = scripts.get_bases()
-    if not bases: 
+    if not bases:
         raise LookupError(f"Revision tree {tree_name!r} does not exist.")
 
     # there could be only a single tree
