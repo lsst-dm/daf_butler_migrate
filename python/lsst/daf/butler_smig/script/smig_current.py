@@ -31,7 +31,7 @@ from alembic import command
 from .. import config, smig
 
 
-_LOG = logging.getLogger(__name__.partition(".")[2])
+_LOG = logging.getLogger(__name__)
 
 
 def smig_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
@@ -50,11 +50,11 @@ def smig_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
         If True then print versions numbers from butler, otherwise display
         information about alembic revisions.
     """
-    db_url = smig.butler_db_url(repo)
+    db_url, schema = smig.butler_db_params(repo)
 
     if butler:
         # Print current versions defined in butler.
-        manager_versions = smig.manager_versions(db_url)
+        manager_versions = smig.manager_versions(db_url, schema)
         if manager_versions:
             for manager, (klass, version) in sorted(manager_versions.items()):
                 rev_id = smig.rev_id(manager, klass.rpartition(".")[-1], version)
@@ -65,4 +65,5 @@ def smig_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
         # Revisions from alembic
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
         cfg.set_main_option("sqlalchemy.url", db_url)
+        cfg.set_section_option("smig", "schema", schema)
         command.current(cfg, verbose=verbose)

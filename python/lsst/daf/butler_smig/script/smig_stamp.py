@@ -32,7 +32,7 @@ from alembic import command
 from .. import config, smig
 
 
-_LOG = logging.getLogger(__name__.partition(".")[2])
+_LOG = logging.getLogger(__name__)
 
 
 def smig_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
@@ -50,9 +50,9 @@ def smig_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
     dry_run : `bool`
         Skip all updates.
     """
-    db_url = smig.butler_db_url(repo)
+    db_url, schema = smig.butler_db_params(repo)
 
-    manager_versions = smig.manager_versions(db_url)
+    manager_versions = smig.manager_versions(db_url, schema)
 
     revisions: Dict[str, str] = {}
     for manager, (klass, version) in manager_versions.items():
@@ -64,6 +64,7 @@ def smig_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
 
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
+    cfg.set_section_option("smig", "schema", schema)
 
     if dry_run:
         print("Will store these revisions in alembic version table:")

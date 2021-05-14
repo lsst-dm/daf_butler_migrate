@@ -38,11 +38,13 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    schema = config.get_section_option("smig", "schema")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table_schema=schema,
     )
 
     with context.begin_transaction():
@@ -62,9 +64,12 @@ def run_migrations_online():
         poolclass=pool.NullPool,
     )
 
+    schema = config.get_section_option("smig", "schema")
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            version_table_schema=schema,
         )
 
         with context.begin_transaction():

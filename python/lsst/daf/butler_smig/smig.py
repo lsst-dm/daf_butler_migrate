@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from typing import Dict, List, Mapping, Tuple, Optional
@@ -30,6 +31,8 @@ import sqlalchemy
 from lsst.daf.butler import ButlerConfig
 from lsst.daf.butler.core.repoRelocation import replaceRoot
 
+
+_LOG = logging.getLogger(__name__)
 
 NS_UUID = uuid.UUID('840b31d9-05cd-5161-b2c8-00d32b280d0f')
 """Namespace UUID used for UUID5 generation. Do not change. This was
@@ -257,8 +260,8 @@ def rev_id(*args: str) -> str:
     return uuid.uuid5(NS_UUID, name).hex[-12:]
 
 
-def butler_db_url(repo: str) -> str:
-    """Extract registry database URL from Butler configuration.
+def butler_db_params(repo: str) -> Tuple[str, Optional[str]]:
+    """Extract registry database parameters from Butler configuration.
 
     Parameters
     ----------
@@ -270,6 +273,8 @@ def butler_db_url(repo: str) -> str:
     -------
     db_url : `str`
         URL for registry database.
+    schema : `str` or `None`
+        Schema (namespace) name.
     """
     butlerConfig = ButlerConfig(repo)
     if "root" in butlerConfig:
@@ -277,11 +282,18 @@ def butler_db_url(repo: str) -> str:
     else:
         butlerRoot = butlerConfig.configDir
     db_url = replaceRoot(butlerConfig["registry", "db"], butlerRoot)
+    schema: Optional[str] = None
+    try:
+        schema = butlerConfig["registry", "namespace"]
+    except KeyError:
+        pass
 
-    return db_url
+    _LOG.debug("db_url=%r, schema=%r", db_url, schema)
+
+    return db_url, schema
 
 
-def manager_versions(db_url: str) -> Mapping[str, Tuple[str, str]]:
+def manager_versions(db_url: str, schema: Optional[str]) -> Mapping[str, Tuple[str, str]]:
     """Retrieve current manager versions stored in butler_attributes table.
 
     Parameters
@@ -298,7 +310,7 @@ def manager_versions(db_url: str) -> Mapping[str, Tuple[str, str]]:
     """
     engine = sqlalchemy.engine.create_engine(db_url)
 
-    meta = sqlalchemy.schema.MetaData()
+    meta = sqlalchemy.schema.MetaData(schema=schema)
     table = sqlalchemy.schema.Table(
         "butler_attributes", meta,
         sqlalchemy.schema.Column("name", sqlalchemy.Text),

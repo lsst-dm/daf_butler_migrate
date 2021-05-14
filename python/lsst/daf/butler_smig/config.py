@@ -30,7 +30,7 @@ from alembic.config import Config
 from . import smig
 
 
-_LOG = logging.getLogger(__name__.partition(".")[2])
+_LOG = logging.getLogger(__name__)
 
 _SMIG_PACKAGE_ENV = "DAF_BUTLER_SMIG_DIR"
 

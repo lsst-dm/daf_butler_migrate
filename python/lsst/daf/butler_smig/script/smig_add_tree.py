@@ -32,7 +32,7 @@ from alembic import command
 from .. import config, smig
 
 
-_LOG = logging.getLogger(__name__.partition(".")[2])
+_LOG = logging.getLogger(__name__)
 
 
 def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:

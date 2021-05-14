@@ -33,7 +33,7 @@ from alembic.script import ScriptDirectory
 from .. import config, smig
 
 
-_LOG = logging.getLogger(__name__.partition(".")[2])
+_LOG = logging.getLogger(__name__)
 
 
 def _revision_exists(scripts, revision):

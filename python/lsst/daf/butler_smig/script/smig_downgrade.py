@@ -31,7 +31,7 @@ from alembic import command
 from .. import config, smig
 
 
-_LOG = logging.getLogger(__name__.partition(".")[2])
+_LOG = logging.getLogger(__name__)
 
 
 def smig_downgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool) -> None:
@@ -51,12 +51,13 @@ def smig_downgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, 
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
     """
-    db_url = smig.butler_db_url(repo)
+    db_url, schema = smig.butler_db_params(repo)
 
     if one_shot_tree:
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot_tree=one_shot_tree)
     else:
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
+    cfg.set_section_option("smig", "schema", schema)
 
     command.downgrade(cfg, revision, sql=sql)
