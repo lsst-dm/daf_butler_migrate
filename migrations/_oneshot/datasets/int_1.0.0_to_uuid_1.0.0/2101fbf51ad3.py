@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, NamedTuple, Tuple
 import uuid
 
 from alembic import op, context
@@ -37,6 +37,17 @@ UUID5_DATASET_TYPES = ("raw", )
 
 ID_MAP_TABLE_NAME = "smig_id2uuid"
 """Name of the ID mapping table"""
+
+class TableInfo(NamedTuple):
+    """Info about table reflected from database.
+
+    Information only includes columns that are migrated.
+    """
+    primary_key: Optional[Dict]
+    foreign_keys: List[Dict]
+    unique_constraints: List[Dict]
+    indices: List[Dict]
+
 
 def upgrade():
     """Change type of the primary key colum in dataset table from int to UUID.
@@ -78,46 +89,65 @@ def upgrade():
     _LOG.debug("dialect: %r schema: %r, bind: %r", dialect, schema, bind)
 
     # need to know data type for new UUID column, this is dialect-specific
-    if dialect.name == 'postgresql':
+    if dialect.name == "postgresql":
         uuid_type = dialect.type_descriptor(UUID())
     else:
         uuid_type = dialect.type_descriptor(sa.CHAR(32))
     _LOG.debug("uuid_type: %r", uuid_type)
 
+    # get names of tables that need migration, ordered by dependencies
+    table_names = _tables_to_migrate(schema)
+
+    table_info = _get_table_info(schema, table_names)
+
+    # create id -> uuid mapping table
+    _make_id_map(schema, uuid_type)
+
+    # add uuid column to each table that needs it
+    for table_name in table_names:
+        _add_uuid_column(table_name, uuid_type, schema)
+
     # reflect schema from database
     metadata = sa.schema.MetaData(bind, schema=schema)
     metadata.reflect()
-    tables = _tables_to_migrate(metadata)
-
-    # create id -> uuid mapping table
-    _make_id_map(metadata, uuid_type)
-
-    # add uuid column to each table that needs it
-    for table in tables:
-        _add_uuid_column(table.name, uuid_type, schema)
-
-    # refresh schema from database
-    metadata = sa.schema.MetaData(bind, schema=schema)
-    metadata.reflect()
-    tables = _tables_to_migrate(metadata)
 
     # generate id -> uuid mapping
     _fill_id_map(metadata)
 
     # fill uuid column in the tables
     map_table = _get_table(metadata, ID_MAP_TABLE_NAME)
-    for table in tables:
+    for table_name in table_names:
+        table = _get_table(metadata, table_name)
         _fill_uuid_column(table, map_table)
 
-    # raise NotImplementedError()
+    # drop existing constraints, indices, and columns; has to be done in
+    # reverse order
+    for table_name in reversed(table_names):
+        _drop_columns(table_name, table_info[table_name], schema)
+
+    # rename uuid columns
+    for table_name in table_names:
+        _rename_column(table_name, schema)
+
+    # re-create indices and constraints
+    for table_name in table_names:
+        _make_indices(table_name, table_info[table_name], schema)
+
+    # drop mapping table
+    _LOG.debug("Dropping mapping table")
+    op.drop_table(ID_MAP_TABLE_NAME, schema)
+
+    # update version in butler_attributes table
+    butler_attributes = _get_table(metadata, "butler_attributes")
+    _update_butler_attributes(butler_attributes)
 
 
 def downgrade():
     raise NotImplementedError()
 
 
-def _tables_to_migrate(metadata: sa.schema.MetaData) -> List[sa.schema.Table]:
-    """Return ordered list of tables that should be migrated.
+def _tables_to_migrate(schema: str) -> List[str]:
+    """Return list of tables that should be migrated.
 
     Tables are ordered based on their FK relation.
     """
@@ -134,10 +164,39 @@ def _tables_to_migrate(metadata: sa.schema.MetaData) -> List[sa.schema.Table]:
         "dataset_tags_",
     )
 
-    tables = [table for table in metadata.sorted_tables
-              if table.name in exact_match or table.name.startswith(start_match)]
-    _LOG.debug("_tables_to_migrate: %s", [table.name for table in tables])
+    inspector = sa.inspect(op.get_bind())
+    tables = [table for table, _ in inspector.get_sorted_table_and_fkc_names(schema)
+              if table and (table in exact_match or table.startswith(start_match))]
+    _LOG.debug("_tables_to_migrate: %s", tables)
     return tables
+
+
+def _get_table_info(schema: str, table_names: List[str]) -> Dict[str, TableInfo]:
+    """Extract constraints and indices info.
+    """
+    inspector = sa.inspect(op.get_bind())
+
+    table_info: Dict[str, TableInfo] = {}
+    for table in table_names:
+
+        id_col = "id" if table == "dataset" else "dataset_id"
+
+        pk = inspector.get_pk_constraint(table, schema)
+        if pk and id_col not in pk["constrained_columns"]:
+            pk = None
+        fks = inspector.get_foreign_keys(table, schema)
+        fks = [fk for fk in fks if id_col in fk["constrained_columns"]]
+        uniques = inspector.get_unique_constraints(table, schema)
+        uniques = [unq for unq in uniques if id_col in unq["column_names"]]
+        indices = inspector.get_indexes(table, schema)
+        indices = [idx for idx in indices if id_col in idx["column_names"]]
+
+        table_info[table] = TableInfo(
+            primary_key=pk, foreign_keys=fks, unique_constraints=uniques, indices=indices
+        )
+        _LOG.debug("TableInfo for %r: %s", table, table_info[table])
+
+    return table_info
 
 
 def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
@@ -149,15 +208,15 @@ def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
     return tables.pop()
 
 
-def _make_id_map(metadata: sa.schema.MetaData, uuid_type: Any):
+def _make_id_map(schema: str, uuid_type: Any):
     """Create id -> uuid mapping table and fill it.
     """
     _LOG.info("creating smig_id2uuid table")
-    table = op.create_table(
+    op.create_table(
         ID_MAP_TABLE_NAME,
-        sa.Column("id", sa.BigInteger, primary_key=True),
+        sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=False),
         sa.Column("uuid", uuid_type),
-        schema=metadata.schema,
+        schema=schema,
     )
 
 
@@ -328,3 +387,139 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
         )
     op.get_bind().execute(sql)
     _LOG.debug("Filled uuids in table %r", table.name)
+
+
+def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
+
+    _LOG.debug("Dropping items from %s table schema", table_name)
+    id_col = "id" if table_name == "dataset" else "dataset_id"
+
+    for index_dict in table_info.indices:
+        index_name = index_dict["name"]
+        _LOG.debug("Dropping index %s", index_dict)
+        op.drop_index(index_name, table_name=table_name, schema=schema)
+
+    for unique_dict in table_info.unique_constraints:
+        unique_name = unique_dict["name"]
+        _LOG.debug("Dropping unique constraint %s", unique_name)
+        op.drop_constraint(unique_name, table_name=table_name, schema=schema)
+
+    for fk_dict in table_info.foreign_keys:
+        fk_name = fk_dict["name"]
+        _LOG.debug("Dropping foreign key %s", fk_name)
+        op.drop_constraint(fk_name, table_name=table_name, schema=schema)
+
+    # We probably don't need, pk will be dropped if column is dropped too
+    if table_info.primary_key:
+        pk_name = table_info.primary_key["name"]
+        _LOG.debug("Dropping primary key %s", pk_name)
+        op.drop_constraint(pk_name, table_name=table_name, schema=schema)
+
+    # drop column
+    _LOG.debug("Dropping column %s", id_col)
+    op.drop_column(table_name, id_col, schema=schema)
+
+    # drop a sequence as well
+    if table_name == "dataset":
+        dialect = op.get_bind().dialect
+        if dialect.name == "postgresql":
+            seq = "dataset_seq_id"
+            if schema:
+                seq = f"{schema}.{seq}"
+            _LOG.debug("Dropping sequence %r", seq)
+            sql = f"DROP SEQUENCE {seq}"
+            op.execute(sql)
+
+
+def _rename_column(table_name: str, schema: str) -> None:
+    id_col = "id" if table_name == "dataset" else "dataset_id"
+    _LOG.debug("Renaming uuid column in table %s to %s", table_name, id_col)
+
+    op.alter_column(table_name, f"{id_col}_uuid", new_column_name=id_col, nullable=False)
+
+
+def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
+
+    if table_info.primary_key:
+        pk_name = table_info.primary_key["name"]
+        _LOG.debug("Adding primary key %s", pk_name)
+        columns = table_info.primary_key["constrained_columns"]
+        op.create_primary_key(pk_name, table_name, columns, schema=schema)
+
+    for unique_dict in table_info.unique_constraints:
+        unique_name = unique_dict["name"]
+        _LOG.debug("Adding unique constraint %s", unique_name)
+        columns = unique_dict["column_names"]
+        op.create_unique_constraint(unique_name, table_name, columns, schema=schema)
+
+    for index_dict in table_info.indices:
+        index_name = index_dict["name"]
+        _LOG.debug("Adding index %s", index_dict)
+        columns = index_dict["column_names"]
+        unique = index_dict["unique"]
+        op.create_index(index_name, table_name, columns, schema=schema, unique=unique)
+
+    for fk_dict in table_info.foreign_keys:
+        fk_name = fk_dict["name"]
+        _LOG.debug("Adding foreign key %s", fk_name)
+        ref_table = fk_dict["referred_table"]
+        ref_schema = fk_dict["referred_schema"]
+        local_cols = fk_dict["constrained_columns"]
+        remote_cols = fk_dict["referred_columns"]
+        op.create_foreign_key(fk_name, table_name, ref_table, local_cols, remote_cols,
+                              source_schema=schema, referent_schema=ref_schema)
+
+
+def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
+    """Update contents of butler_attributes with new version
+    """
+
+    _LOG.debug("Updating butler_attributes metadata")
+
+    mgr_module = "lsst.daf.butler.registry.datasets.byDimensions._manager"
+    old_class = "ByDimensionsDatasetRecordStorageManager"
+    new_class = "ByDimensionsDatasetRecordStorageManagerUUID"
+
+    bind = op.get_bind()
+
+    # remove existing records for old manager
+    sql = butler_attributes.delete(
+        butler_attributes.columns.name == f"version:{mgr_module}.{old_class}")
+    bind.execute(sql)
+    sql = butler_attributes.delete(
+        butler_attributes.columns.name == f"schema_digest:{mgr_module}.{old_class}")
+    bind.execute(sql)
+
+    # update manager class name
+    sql = butler_attributes.update().values(
+        value=f"{mgr_module}.{new_class}"
+    ).where(
+        butler_attributes.columns.name == "config:registry.managers.datasets"
+    )
+    bind.execute(sql)
+
+    # insert version and digest for new manager
+    if bind.dialect.name == "postgresql":
+        digest = "0389bea276b430b9da7330c231a39af7"
+    elif bind.dialect.name == "sqlite":
+        digest = "338aa9bda15c2dc82ad04ac55e1b56bc"
+    else:
+        raise ValueError(f"Unexpected dialect type: {bind.dialect.name}")
+    sql = butler_attributes.insert()
+    bind.execute(sql, [
+        {"name": f"version:{mgr_module}.{new_class}", "value": "1.0.0"},
+        {"name": f"schema_digest:{mgr_module}.{new_class}", "value": digest},
+    ])
+
+    if bind.dialect.name == "postgresql":
+        digest = "71d2aa0e9873e78d51808aa5e09c5bea"
+    elif bind.dialect.name == "sqlite":
+        digest = "3558b84d12fa04082ffd6935e0488922"
+    # the change also affects schema digest for other managers
+    sql = butler_attributes.update().values(
+        value=digest
+    ).where(
+        butler_attributes.columns.name ==
+        "schema_digest:lsst.daf.butler.registry.bridge.monolithic.MonolithicDatastoreRegistryBridgeManager"
+    )
+    bind.execute(sql)
