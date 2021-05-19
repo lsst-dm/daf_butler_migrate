@@ -363,8 +363,10 @@ def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
 
     # Pedantic mode - add column comment
     if table_name == "dataset":
-        comment = "A unique field used as the primary key for dataset."
-        op.alter_column(table_name, column_name, comment=comment, schema=schema)
+        dialect = op.get_bind().dialect
+        if dialect.name == "postgresql":
+            comment = "A unique field used as the primary key for dataset."
+            op.alter_column(table_name, column_name, comment=comment, schema=schema)
 
 
 def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> None:
@@ -379,15 +381,15 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
     # generate UUIDs
     if table.name == "dataset":
         sql = table.update().values(
-            id_uuid=map_table.columns.uuid
-        ).where(
-            map_table.columns.id == table.columns.id
+            id_uuid=sa.select([map_table.columns.uuid]).where(
+                map_table.columns.id == table.columns.id
+            )
         )
     else:
         sql = table.update().values(
-            dataset_id_uuid=map_table.columns.uuid
-        ).where(
-            map_table.columns.id == table.columns.dataset_id
+            dataset_id_uuid=sa.select([map_table.columns.uuid]).where(
+                map_table.columns.id == table.columns.dataset_id
+            )
         )
     op.get_bind().execute(sql)
     _LOG.debug("Filled uuids in table %r", table.name)

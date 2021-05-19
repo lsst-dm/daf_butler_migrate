@@ -62,9 +62,6 @@ def run_migrations_online():
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        executemany_mode='values',
-        executemany_values_page_size=10000,
-        executemany_batch_page_size=500,
     )
 
     schema = config.get_section_option("smig", "schema")
