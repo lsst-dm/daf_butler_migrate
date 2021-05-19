@@ -65,5 +65,6 @@ def smig_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
         # Revisions from alembic
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
         cfg.set_main_option("sqlalchemy.url", db_url)
-        cfg.set_section_option("smig", "schema", schema)
+        if schema:
+            cfg.set_section_option("smig", "schema", schema)
         command.current(cfg, verbose=verbose)

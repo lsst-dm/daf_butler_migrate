@@ -82,6 +82,10 @@ class SmigAlembicConfig(Config):
         # override default file template
         cfg.set_main_option("file_template", "%%(rev)s")
 
+        # we do not use this option, this is just to make sure that [smig]
+        # section exists
+        cfg.set_section_option("smig", "_smig", "")
+
         return cfg
 
     def get_template_directory(self):

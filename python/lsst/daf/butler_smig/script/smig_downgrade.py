@@ -58,6 +58,7 @@ def smig_downgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, 
     else:
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
-    cfg.set_section_option("smig", "schema", schema)
+    if schema:
+        cfg.set_section_option("smig", "schema", schema)
 
     command.downgrade(cfg, revision, sql=sql)

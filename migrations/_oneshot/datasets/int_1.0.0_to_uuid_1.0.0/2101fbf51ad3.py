@@ -36,7 +36,7 @@ UUID5_DATASET_TYPES = ("raw", )
 """
 
 ID_MAP_TABLE_NAME = "smig_id2uuid"
-"""Name of the ID mapping table"""
+"""Name of the temporary ID mapping table"""
 
 class TableInfo(NamedTuple):
     """Info about table reflected from database.
@@ -47,6 +47,18 @@ class TableInfo(NamedTuple):
     foreign_keys: List[Dict]
     unique_constraints: List[Dict]
     indices: List[Dict]
+
+STATIC_TABLES = (
+    "dataset",
+    "dataset_location",
+    "dataset_location_trash",
+    "file_datastore_records",
+)
+
+DYNAMIC_TABLES_PREFIX = (
+    "dataset_calibs_",
+    "dataset_tags_",
+)
 
 
 def upgrade():
@@ -151,22 +163,9 @@ def _tables_to_migrate(schema: str) -> List[str]:
 
     Tables are ordered based on their FK relation.
     """
-
-    exact_match = (
-        "dataset",
-        "dataset_location",
-        "dataset_location_trash",
-        "file_datastore_records",
-    )
-
-    start_match = (
-        "dataset_calibs_",
-        "dataset_tags_",
-    )
-
     inspector = sa.inspect(op.get_bind())
     tables = [table for table, _ in inspector.get_sorted_table_and_fkc_names(schema)
-              if table and (table in exact_match or table.startswith(start_match))]
+              if table and (table in STATIC_TABLES or table.startswith(DYNAMIC_TABLES_PREFIX))]
     _LOG.debug("_tables_to_migrate: %s", tables)
     return tables
 
@@ -362,6 +361,11 @@ def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
         schema=schema
     )
 
+    # Pedantic mode - add column comment
+    if table_name == "dataset":
+        comment = "A unique field used as the primary key for dataset."
+        op.alter_column(table_name, column_name, comment=comment, schema=schema)
+
 
 def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> None:
     """Create and fill new table replacing ints with UUIDs.
@@ -466,8 +470,15 @@ def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
         ref_schema = fk_dict["referred_schema"]
         local_cols = fk_dict["constrained_columns"]
         remote_cols = fk_dict["referred_columns"]
-        op.create_foreign_key(fk_name, table_name, ref_table, local_cols, remote_cols,
-                              source_schema=schema, referent_schema=ref_schema)
+        # schema reflection does not provide ONDELETE value, but we know what
+        # it should be
+        ondelete = None
+        if table_name.startswith(DYNAMIC_TABLES_PREFIX):
+            ondelete = "CASCADE"
+        op.create_foreign_key(
+            fk_name, table_name, ref_table, local_cols, remote_cols,
+            ondelete=ondelete, source_schema=schema, referent_schema=ref_schema
+        )
 
 
 def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
@@ -511,11 +522,12 @@ def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
         {"name": f"schema_digest:{mgr_module}.{new_class}", "value": digest},
     ])
 
+    # the change also affects schema digest for one other manager, this
+    # digest is for MonolithicDatastoreRegistryBridgeManager 0.2.0
     if bind.dialect.name == "postgresql":
         digest = "71d2aa0e9873e78d51808aa5e09c5bea"
     elif bind.dialect.name == "sqlite":
         digest = "3558b84d12fa04082ffd6935e0488922"
-    # the change also affects schema digest for other managers
     sql = butler_attributes.update().values(
         value=digest
     ).where(

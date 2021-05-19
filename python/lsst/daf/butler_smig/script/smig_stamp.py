@@ -64,7 +64,8 @@ def smig_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
 
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
-    cfg.set_section_option("smig", "schema", schema)
+    if schema:
+        cfg.set_section_option("smig", "schema", schema)
 
     if dry_run:
         print("Will store these revisions in alembic version table:")
