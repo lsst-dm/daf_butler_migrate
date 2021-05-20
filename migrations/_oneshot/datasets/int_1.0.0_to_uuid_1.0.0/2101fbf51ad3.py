@@ -76,19 +76,20 @@ def upgrade():
 
     The plan for implementing that:
 
-    - Add new column to dataset table with a temporary name (e.g. `uuid_id`),
+    - Create temporary table for mapping integer IDs into UUIDs, fill it based
+      run name, dataset type, and dataId for each dataset ID.
+    - Add new column to dataset table with a temporary name (e.g. `id_uuid`),
       with type matching UUID type, non-indexed, with default NULL.
-    - Fill values in that colum based on all other info, this will involve
-      reading bunch of other tables.
-    - In all dependent tables create new column, fill it with values matching
-      content of dataset table.
-    - Remove FK constraints from all dependent tables, remember the names of
-      constraints, drop `dataset_id` columns.
-    - Remove PK from `dataset` table, drop `id` column.
+    - Add `dataset_id_uuid` column to each dependent table.
+    - Fill values in the UUID column using join with a mapping table.
+    - Drop all constraints and indices that use `dataset_id` column in
+      dependent tables, and drop `dataset_id` column itself.
+    - Remove PK from `dataset` table, drop `id` column, also drop
+      `dataset_seq_id` sequence for postgres case.
     - Rename `uuid_id` column to `id`, add PK constraint with the same name as
-      before.
-    - For each dependent table rename new column to `dataset_id`, add FK
-      constraint.
+      before to `dataset` table.
+    - For each dependent table rename UUID column to `dataset_id`, re-create
+      all constraints and indices.
     """
 
     # get migration context
@@ -155,11 +156,14 @@ def upgrade():
 
 
 def downgrade():
+    """Downgrade is not implemented, it may be realtively easy to do but it is
+    likely we never need it.
+    """
     raise NotImplementedError()
 
 
 def _tables_to_migrate(schema: str) -> List[str]:
-    """Return list of tables that should be migrated.
+    """Return list of table names that should be migrated.
 
     Tables are ordered based on their FK relation.
     """
@@ -171,14 +175,16 @@ def _tables_to_migrate(schema: str) -> List[str]:
 
 
 def _get_table_info(schema: str, table_names: List[str]) -> Dict[str, TableInfo]:
-    """Extract constraints and indices info.
+    """Extract constraints and indices info for all tables.
+
+    This only returns indices and constraints that use dataset id column.
     """
     inspector = sa.inspect(op.get_bind())
 
     table_info: Dict[str, TableInfo] = {}
     for table in table_names:
 
-        id_col = "id" if table == "dataset" else "dataset_id"
+        id_col = _id_column_name(table)
 
         pk = inspector.get_pk_constraint(table, schema)
         if pk and id_col not in pk["constrained_columns"]:
@@ -199,8 +205,11 @@ def _get_table_info(schema: str, table_names: List[str]) -> Dict[str, TableInfo]
 
 
 def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
-    # If schema names are used then schema is a part of the key but I do not
-    # want to depend on that, so just iterate and find matching name.
+    """Return sqlalchemy Table instance.
+
+    If schema names are used then schema is a part of the key but I do not
+    want to depend on that, so just iterate and find matching name.
+    """
     tables = [table for table in metadata.tables.values() if table.name == name]
     if not tables:
         raise LookupError("Failed to find table %r in schema", name)
@@ -208,7 +217,7 @@ def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
 
 
 def _make_id_map(schema: str, uuid_type: Any):
-    """Create id -> uuid mapping table and fill it.
+    """Create id -> uuid mapping table.
     """
     _LOG.info("creating smig_id2uuid table")
     op.create_table(
@@ -220,7 +229,8 @@ def _make_id_map(schema: str, uuid_type: Any):
 
 
 def _fill_id_map(metadata: sa.schema.MetaData):
-
+    """Fill mapping table generating UUIDs according to policies.
+    """
     table = _get_table(metadata, ID_MAP_TABLE_NAME)
 
     start_time = time.time()
@@ -228,8 +238,8 @@ def _fill_id_map(metadata: sa.schema.MetaData):
     batch: List[Dict[str, Any]] = []
     for run_name, dstype_name, dataset_id, dataId in _gen_refs(metadata):
         dataset_uuid = _makeDatasetId(run_name, dstype_name, dataId)
-        _LOG.debug("dataset_id: %r, run_name: %r, dstype_name: %r , dataId: %r, dataset_uuid: %r",
-                   dataset_id, run_name, dstype_name, dataId, str(dataset_uuid))
+        # _LOG.debug("dataset_id: %r, run_name: %r, dstype_name: %r , dataId: %r, dataset_uuid: %r",
+        #            dataset_id, run_name, dstype_name, dataId, str(dataset_uuid))
         batch.append({"id": dataset_id, "uuid": str(dataset_uuid)})
 
         if len(batch) >= 10000:
@@ -276,7 +286,8 @@ def _gen_refs(metadata: sa.schema.MetaData) -> Iterator[Tuple[str, str, int, Dic
         # bit more complex.
         dim_cols = [
             col for col in table.columns
-            if col.name not in ("dataset_id", "dataset_id_uuid", "dataset_type_id", "collection_name", "collection_id")
+            if col.name not in ("dataset_id", "dataset_id_uuid", "dataset_type_id",
+                                "collection_name", "collection_id")
         ]
         _LOG.debug("Making refs from %r table, dim_names: %s", table.name, [col.name for col in dim_cols])
 
@@ -341,19 +352,21 @@ def _makeDatasetId(run_name: str, dstype_name: str, dataId: Dict[str, Any]) -> u
         for name, value in sorted(dataId.items()):
             items.append((name, str(value)))
         data = ",".join(f"{key}={value}" for key, value in items)
-        _LOG.debug("run_name: %r, dstype_name: %r, dataId: %r, data: %r",
-                   run_name, dstype_name, dataId, data)
+        # _LOG.debug("run_name: %r, dstype_name: %r, dataId: %r, data: %r",
+        #            run_name, dstype_name, dataId, data)
         return uuid.uuid5(NS_UUID, data)
 
 
-def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
-    """Add new uuid column to the table.
+def _id_column_name(table_name: str) -> str:
+    """Return dataset ID column name for a given table.
     """
-    if table_name == "dataset":
-        column_name = "id_uuid"
-    else:
-        column_name = "dataset_id_uuid"
+    return "id" if table_name == "dataset" else "dataset_id"
 
+
+def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
+    """Add new uuid column to the table, column is nullable initially.
+    """
+    column_name = _id_column_name(table_name) + "_uuid"
     _LOG.debug("Adding column %r to table %r", column_name, table_name)
     op.add_column(
         table_name,
@@ -370,10 +383,8 @@ def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
 
 
 def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> None:
-    """Create and fill new table replacing ints with UUIDs.
-
-    The newly create table will not have any indices or constraints defined for
-    it, this will be done later when original tables are deleted.
+    """Fill new UUID column in a table using values from existing ID column and
+    mapping table.
     """
     metadata = table.metadata
     table_name = table.name
@@ -396,34 +407,40 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
 
 
 def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
+    """Drop existing ID column from a table, removing also aal indices and
+    constraints that use it.
+    """
 
     _LOG.debug("Dropping items from %s table schema", table_name)
-    id_col = "id" if table_name == "dataset" else "dataset_id"
+    id_col = _id_column_name(table_name)
 
-    for index_dict in table_info.indices:
-        index_name = index_dict["name"]
-        _LOG.debug("Dropping index %s", index_dict)
-        op.drop_index(index_name, table_name=table_name, schema=schema)
+    with op.batch_alter_table(table_name, schema) as batch_op:
 
-    for unique_dict in table_info.unique_constraints:
-        unique_name = unique_dict["name"]
-        _LOG.debug("Dropping unique constraint %s", unique_name)
-        op.drop_constraint(unique_name, table_name=table_name, schema=schema)
+        for index_dict in table_info.indices:
+            index_name = index_dict["name"]
+            _LOG.debug("Dropping index %s", index_dict)
+            batch_op.drop_index(index_name)
 
-    for fk_dict in table_info.foreign_keys:
-        fk_name = fk_dict["name"]
-        _LOG.debug("Dropping foreign key %s", fk_name)
-        op.drop_constraint(fk_name, table_name=table_name, schema=schema)
+        for unique_dict in table_info.unique_constraints:
+            unique_name = unique_dict["name"]
+            _LOG.debug("Dropping unique constraint %s", unique_name)
+            batch_op.drop_constraint(unique_name)
 
-    # We probably don't need, pk will be dropped if column is dropped too
-    if table_info.primary_key:
-        pk_name = table_info.primary_key["name"]
-        _LOG.debug("Dropping primary key %s", pk_name)
-        op.drop_constraint(pk_name, table_name=table_name, schema=schema)
+        for fk_dict in table_info.foreign_keys:
+            fk_name = fk_dict["name"]
+            _LOG.debug("Dropping foreign key %s", fk_name)
+            batch_op.drop_constraint(fk_name)
 
-    # drop column
-    _LOG.debug("Dropping column %s", id_col)
-    op.drop_column(table_name, id_col, schema=schema)
+        # We probably don't need, pk will be dropped if column is dropped too
+        if table_info.primary_key:
+            pk_name = table_info.primary_key["name"]
+            if pk_name:
+                _LOG.debug("Dropping primary key %s", pk_name)
+                batch_op.drop_constraint(pk_name)
+
+        # drop column
+        _LOG.debug("Dropping column %s", id_col)
+        batch_op.drop_column(id_col)
 
     # drop a sequence as well
     if table_name == "dataset":
@@ -438,13 +455,17 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
 
 
 def _rename_column(table_name: str, schema: str) -> None:
-    id_col = "id" if table_name == "dataset" else "dataset_id"
+    """Rename UUID column to its final name, make it NOT NULL.
+    """
+    id_col = _id_column_name(table_name)
     _LOG.debug("Renaming uuid column in table %s to %s", table_name, id_col)
 
     op.alter_column(table_name, f"{id_col}_uuid", new_column_name=id_col, nullable=False)
 
 
 def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
+    """Re-create all constraint and indices on a table using new UUID column.
+    """
 
     if table_info.primary_key:
         pk_name = table_info.primary_key["name"]
@@ -484,9 +505,8 @@ def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
 
 
 def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
-    """Update contents of butler_attributes with new version
+    """Update contents of butler_attributes with new version and digests.
     """
-
     _LOG.debug("Updating butler_attributes metadata")
 
     mgr_module = "lsst.daf.butler.registry.datasets.byDimensions._manager"
