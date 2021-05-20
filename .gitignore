@@ -20,4 +20,3 @@ pytest_session.txt
 .pytest_cache
 .coverage
 
-alembic.ini
