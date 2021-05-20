@@ -1,6 +1,7 @@
 # from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
+from sqlalchemy import engine
 from sqlalchemy import pool
 
 from alembic import context
@@ -58,10 +59,22 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
+    # executemany_* arguments are postgres-specific, need to check dialect
+    url = engine.url.make_url(config.get_main_option("sqlalchemy.url"))
+    if url.get_dialect().name == "postgresql":
+        kwargs = dict(
+            executemany_mode='values',
+            executemany_values_page_size=10000,
+            executemany_batch_page_size=500,
+        )
+    else:
+        kwargs = {}
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        **kwargs
     )
 
     schema = config.get_section_option("smig", "schema")
