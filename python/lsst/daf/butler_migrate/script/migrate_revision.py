@@ -36,7 +36,9 @@ from .. import config, migrate
 _LOG = logging.getLogger(__name__)
 
 
-def _revision_exists(scripts, revision):
+def _revision_exists(scripts: ScriptDirectory, revision: str) -> bool:
+    """Check that revision exists.
+    """
     try:
         scripts.get_revisions(revision)
         return True

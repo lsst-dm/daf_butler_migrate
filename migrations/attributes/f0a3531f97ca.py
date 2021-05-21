@@ -1,7 +1,7 @@
 """This is an initial pseudo-revision of the 'attributes' tree.
 
 Revision ID: f0a3531f97ca
-Revises: 
+Revises:
 Create Date: 2021-05-04 16:30:15.021347
 
 """
@@ -16,9 +16,9 @@ branch_labels = ('attributes',)
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     raise NotImplementedError()
 
 
-def downgrade():
+def downgrade() -> None:
     raise NotImplementedError()

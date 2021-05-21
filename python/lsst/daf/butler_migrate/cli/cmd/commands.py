@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import click
+from typing import Any
 
 from lsst.daf.butler.cli.opt import repo_argument
 from lsst.daf.butler.cli.utils import ButlerCommand
@@ -44,7 +45,7 @@ from ..opt import (
 @mig_path_option
 @one_shot_option
 @tree_name_argument()
-def migrate_add_tree(*args, **kwargs):
+def migrate_add_tree(*args: Any, **kwargs: Any) -> None:
     """Create new version tree.
     """
     script.migrate_add_tree(*args, **kwargs)
@@ -55,7 +56,7 @@ def migrate_add_tree(*args, **kwargs):
 @mig_path_exist_option
 @one_shot_option
 @tree_name_argument(required=False)
-def migrate_history(*args, **kwargs):
+def migrate_history(*args: Any, **kwargs: Any) -> None:
     """Display version history for a tree.
     """
     script.migrate_history(*args, **kwargs)
@@ -67,7 +68,7 @@ def migrate_history(*args, **kwargs):
 @tree_name_argument()
 @class_argument()
 @version_argument()
-def migrate_revision(*args, **kwargs):
+def migrate_revision(*args: Any, **kwargs: Any) -> None:
     """Create new revision.
     """
     script.migrate_revision(*args, **kwargs)
@@ -77,7 +78,7 @@ def migrate_revision(*args, **kwargs):
 @verbose_option
 @mig_path_exist_option
 @one_shot_option
-def migrate_trees(*args, **kwargs):
+def migrate_trees(*args: Any, **kwargs: Any) -> None:
     """Print a list of known version trees.
     """
     script.migrate_trees(*args, **kwargs)
@@ -88,7 +89,7 @@ def migrate_trees(*args, **kwargs):
 @purge_option
 @dry_run_option
 @repo_argument(required=True)
-def migrate_stamp(*args, **kwargs):
+def migrate_stamp(*args: Any, **kwargs: Any) -> None:
     """Stamp revision table with current registry versions.
     """
     script.migrate_stamp(*args, **kwargs)
@@ -99,7 +100,7 @@ def migrate_stamp(*args, **kwargs):
 @click.option("--butler", help="Display butler version numbers for managers.", is_flag=True)
 @mig_path_exist_option
 @repo_argument(required=True)
-def migrate_current(*args, **kwargs):
+def migrate_current(*args: Any, **kwargs: Any) -> None:
     """Display current revisions for a database.
     """
     script.migrate_current(*args, **kwargs)
@@ -111,7 +112,7 @@ def migrate_current(*args, **kwargs):
 @sql_option
 @repo_argument(required=True)
 @revision_argument(required=True)
-def migrate_upgrade(*args, **kwargs):
+def migrate_upgrade(*args: Any, **kwargs: Any) -> None:
     """Upgrade schema to a specified revision.
     """
     script.migrate_upgrade(*args, **kwargs)
@@ -123,7 +124,7 @@ def migrate_upgrade(*args, **kwargs):
 @sql_option
 @repo_argument(required=True)
 @revision_argument(required=True)
-def migrate_downgrade(*args, **kwargs):
+def migrate_downgrade(*args: Any, **kwargs: Any) -> None:
     """Downgrade schema to a specified revision.
     """
     script.migrate_downgrade(*args, **kwargs)

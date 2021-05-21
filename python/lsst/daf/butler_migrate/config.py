@@ -88,7 +88,7 @@ class MigAlembicConfig(Config):
 
         return cfg
 
-    def get_template_directory(self):
+    def get_template_directory(self) -> str:
         """Return the directory where Alembic setup templates are found.
 
         This overrides method from alembic Config to copy templates for our own

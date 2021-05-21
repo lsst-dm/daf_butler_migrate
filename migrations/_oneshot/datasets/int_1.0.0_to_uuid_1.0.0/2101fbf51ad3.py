@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, NamedTuple, Tuple
+from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
 import uuid
 
 from alembic import op, context
@@ -38,16 +38,6 @@ UUID5_DATASET_TYPES = ("raw", )
 ID_MAP_TABLE_NAME = "migration_id2uuid"
 """Name of the temporary ID mapping table"""
 
-class TableInfo(NamedTuple):
-    """Info about table reflected from database.
-
-    Information only includes columns that are migrated.
-    """
-    primary_key: Optional[Dict]
-    foreign_keys: List[Dict]
-    unique_constraints: List[Dict]
-    indices: List[Dict]
-
 STATIC_TABLES = (
     "dataset",
     "dataset_location",
@@ -61,7 +51,18 @@ DYNAMIC_TABLES_PREFIX = (
 )
 
 
-def upgrade():
+class TableInfo(NamedTuple):
+    """Info about table reflected from database.
+
+    Information only includes columns that are migrated.
+    """
+    primary_key: Optional[Dict]
+    foreign_keys: List[Dict]
+    unique_constraints: List[Dict]
+    indices: List[Dict]
+
+
+def upgrade() -> None:
     """Change type of the primary key colum in dataset table from int to UUID.
 
     This is a rather complicated migration, and here is the list of changes
@@ -155,7 +156,7 @@ def upgrade():
     _update_butler_attributes(butler_attributes)
 
 
-def downgrade():
+def downgrade() -> None:
     """Downgrade is not implemented, it may be realtively easy to do but it is
     likely we never need it.
     """
@@ -216,7 +217,7 @@ def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
     return tables.pop()
 
 
-def _make_id_map(schema: str, uuid_type: Any):
+def _make_id_map(schema: str, uuid_type: Any) -> None:
     """Create id -> uuid mapping table.
     """
     _LOG.info("creating %s table", ID_MAP_TABLE_NAME)
@@ -228,7 +229,7 @@ def _make_id_map(schema: str, uuid_type: Any):
     )
 
 
-def _fill_id_map(metadata: sa.schema.MetaData):
+def _fill_id_map(metadata: sa.schema.MetaData) -> None:
     """Fill mapping table generating UUIDs according to policies.
     """
     table = _get_table(metadata, ID_MAP_TABLE_NAME)
@@ -386,9 +387,6 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
     """Fill new UUID column in a table using values from existing ID column and
     mapping table.
     """
-    metadata = table.metadata
-    table_name = table.name
-
     # generate UUIDs
     if table.name == "dataset":
         sql = table.update().values(
@@ -546,6 +544,7 @@ def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
 
     # the change also affects schema digest for one other manager, this
     # digest is for MonolithicDatastoreRegistryBridgeManager 0.2.0
+    manager = "lsst.daf.butler.registry.bridge.monolithic.MonolithicDatastoreRegistryBridgeManager"
     if bind.dialect.name == "postgresql":
         digest = "71d2aa0e9873e78d51808aa5e09c5bea"
     elif bind.dialect.name == "sqlite":
@@ -553,7 +552,6 @@ def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
     sql = butler_attributes.update().values(
         value=digest
     ).where(
-        butler_attributes.columns.name ==
-        "schema_digest:lsst.daf.butler.registry.bridge.monolithic.MonolithicDatastoreRegistryBridgeManager"
+        butler_attributes.columns.name == f"schema_digest:{manager}"
     )
     bind.execute(sql)
