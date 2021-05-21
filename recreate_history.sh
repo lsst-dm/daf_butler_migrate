@@ -46,6 +46,7 @@ butler migrate-add-tree --one-shot datasets/int_1.0.0_to_uuid_1.0.0
 butler migrate-revision --one-shot datasets/int_1.0.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManager 1.0.0
 butler migrate-revision --one-shot datasets/int_1.0.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManagerUUID 1.0.0
 
-butler migrate-add-tree --one-shot datasets/int_0.3.0_to_uuid_1.0.0
-butler migrate-revision --one-shot datasets/int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManager 0.3.0
-butler migrate-revision --one-shot datasets/int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManagerUUID 1.0.0
+# just another example
+# butler migrate-add-tree --one-shot datasets/int_0.3.0_to_uuid_1.0.0
+# butler migrate-revision --one-shot datasets/int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManager 0.3.0
+# butler migrate-revision --one-shot datasets/int_0.3.0_to_uuid_1.0.0 ByDimensionsDatasetRecordStorageManagerUUID 1.0.0
