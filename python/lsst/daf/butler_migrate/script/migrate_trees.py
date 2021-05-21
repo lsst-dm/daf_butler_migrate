@@ -47,7 +47,7 @@ def migrate_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
         _migrate_trees_one_shot(mig_path, verbose)
         return
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
+    cfg = config.MigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
     bases = scripts.get_bases()
 
@@ -85,7 +85,7 @@ def _migrate_trees_one_shot(mig_path: str, verbose: bool) -> None:
 
     for entry in sorted(tree_names):
 
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=entry)
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=entry)
         scripts = ScriptDirectory.from_config(cfg)
 
         if verbose:

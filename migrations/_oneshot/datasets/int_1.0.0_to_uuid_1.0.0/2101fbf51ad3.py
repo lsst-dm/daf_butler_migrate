@@ -35,7 +35,7 @@ UUID5_DATASET_TYPES = ("raw", )
 """Collection of dataset type names for which we make UUID5 dataset IDs.
 """
 
-ID_MAP_TABLE_NAME = "smig_id2uuid"
+ID_MAP_TABLE_NAME = "migration_id2uuid"
 """Name of the temporary ID mapping table"""
 
 class TableInfo(NamedTuple):
@@ -219,7 +219,7 @@ def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
 def _make_id_map(schema: str, uuid_type: Any):
     """Create id -> uuid mapping table.
     """
-    _LOG.info("creating smig_id2uuid table")
+    _LOG.info("creating %s table", ID_MAP_TABLE_NAME)
     op.create_table(
         ID_MAP_TABLE_NAME,
         sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=False),
@@ -255,8 +255,8 @@ def _fill_id_map(metadata: sa.schema.MetaData):
         batch = []
 
     end_time = time.time()
-    _LOG.info("inserted total %s rows into _smig_ud2uuid in %.3f seconds",
-              count, end_time - start_time)
+    _LOG.info("inserted total %s rows into %s in %.3f seconds",
+              count, ID_MAP_TABLE_NAME, end_time - start_time)
 
 
 def _gen_refs(metadata: sa.schema.MetaData) -> Iterator[Tuple[str, str, int, Dict[str, Any]]]:

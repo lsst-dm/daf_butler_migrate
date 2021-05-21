@@ -85,7 +85,7 @@ def migrate_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
     if os.access(tree_folder, os.F_OK):
         raise ValueError(f"Version tree {tree_name!r} already exists in {tree_folder}")
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+    cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
 
     # may need to initialize the whole shebang
     alembic_folder = trees.alembic_folder(relative=False)

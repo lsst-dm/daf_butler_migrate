@@ -32,10 +32,10 @@ from . import migrate
 
 _LOG = logging.getLogger(__name__)
 
-_SMIG_PACKAGE_ENV = "DAF_BUTLER_SMIG_DIR"
+_MIGRATE_PACKAGE_ENV = "DAF_BUTLER_MIGRATE_DIR"
 
 
-class SmigAlembicConfig(Config):
+class MigAlembicConfig(Config):
     """Implementation of alembic config class which overrides few methods.
     """
 
@@ -43,7 +43,7 @@ class SmigAlembicConfig(Config):
     def from_mig_path(cls, mig_path: str, *args: Any,
                       single_tree: Optional[str] = None,
                       one_shot_tree: Optional[str] = None,
-                      **kwargs: Any) -> SmigAlembicConfig:
+                      **kwargs: Any) -> MigAlembicConfig:
         """Create new configuration object.
 
         Parameters
@@ -94,8 +94,8 @@ class SmigAlembicConfig(Config):
         This overrides method from alembic Config to copy templates for our own
         location.
         """
-        package_dir = os.environ.get(_SMIG_PACKAGE_ENV)
+        package_dir = os.environ.get(_MIGRATE_PACKAGE_ENV)
         if not package_dir:
-            raise ValueError(f"{_SMIG_PACKAGE_ENV} environment variables is not defined")
+            raise ValueError(f"{_MIGRATE_PACKAGE_ENV} environment variable is not defined")
 
         return os.path.join(package_dir, "templates")

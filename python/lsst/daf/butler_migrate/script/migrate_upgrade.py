@@ -54,9 +54,9 @@ def migrate_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str,
     db_url, schema = migrate.butler_db_params(repo)
 
     if one_shot_tree:
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot_tree=one_shot_tree)
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path, one_shot_tree=one_shot_tree)
     else:
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
     if schema:
         cfg.set_section_option("daf_butler_migrate", "schema", schema)

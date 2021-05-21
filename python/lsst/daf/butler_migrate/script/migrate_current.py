@@ -63,7 +63,7 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> No
             print("No manager versions defined in butler_attributes table.")
     else:
         # Revisions from alembic
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path)
         cfg.set_main_option("sqlalchemy.url", db_url)
         if schema:
             cfg.set_section_option("daf_butler_migrate", "schema", schema)

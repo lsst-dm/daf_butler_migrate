@@ -52,12 +52,12 @@ class MigrationTrees:
         If `True` return locations for special one-shot migrations.
     """
 
-    _MIG_FOLDER_ENV = "DAF_BUTLER_SMIG_MIGRATIONS"
+    _MIGRATE_FOLDER_ENV = "DAF_BUTLER_MIGRATE_MIGRATIONS"
     """Name of envvar that can be used to override location of top-level
     migrations folder.
     """
 
-    _SMIG_PACKAGE_ENV = "DAF_BUTLER_SMIG_DIR"
+    _MIGRATE_PACKAGE_ENV = "DAF_BUTLER_MIGRATE_DIR"
     """Name of envvar for location of a package containing default migrations.
     """
 
@@ -77,13 +77,13 @@ class MigrationTrees:
         path : `str`
             Location of top-level folder containing all migrations.
         """
-        loc = os.environ.get(cls._MIG_FOLDER_ENV)
+        loc = os.environ.get(cls._MIGRATE_FOLDER_ENV)
         if loc:
             return loc
-        loc = os.environ.get(cls._SMIG_PACKAGE_ENV)
+        loc = os.environ.get(cls._MIGRATE_PACKAGE_ENV)
         if loc:
             return os.path.join(loc, "migrations")
-        raise ValueError(f"None of {cls._MIG_FOLDER_ENV} or {cls._SMIG_PACKAGE_ENV}"
+        raise ValueError(f"None of {cls._MIGRATE_FOLDER_ENV} or {cls._MIGRATE_PACKAGE_ENV}"
                          " environment variables is defined")
 
     def alembic_folder(self, *, relative: bool = True) -> str:

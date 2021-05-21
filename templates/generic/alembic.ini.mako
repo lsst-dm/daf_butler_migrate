@@ -2,7 +2,7 @@
 
 [alembic]
 # path to migration scripts
-# In daf_butler_smig this is set programmatically
+# In daf_butler_migrate this is set programmatically
 # script_location = ${script_location}
 
 # template used to generate migration files

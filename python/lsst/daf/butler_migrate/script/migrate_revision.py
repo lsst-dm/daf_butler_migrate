@@ -79,7 +79,7 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str,
     migrate_trees = migrate.MigrationTrees(mig_path)
     tree_folder = migrate_trees.regular_version_location(tree_name, relative=False)
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
+    cfg = config.MigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
 
     # make sure that tree root is defined
@@ -112,7 +112,7 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str,
 def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
                                version: str) -> None:
 
-    cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+    cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     scripts = ScriptDirectory.from_config(cfg)
 
     # We want to keep trees in separate directories

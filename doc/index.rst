@@ -1,6 +1,6 @@
-#####################################
-daf_butler_smig documentation preview
-#####################################
+########################################
+daf_butler_migrate documentation preview
+########################################
 
 .. This page is for local development only. It isn't published to pipelines.lsst.io.
 
@@ -9,4 +9,4 @@ daf_butler_smig documentation preview
 .. toctree::
    :maxdepth: 1
 
-   lsst.daf.butler_smig/index
+   lsst.daf.butler_migrate/index

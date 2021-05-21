@@ -49,9 +49,9 @@ def migrate_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool
 
     # limit to a single location if tree name is given
     if tree_name:
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     else:
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path)
 
     command.history(cfg, verbose=verbose)
 
@@ -60,12 +60,12 @@ def _one_shot_migrate_history(tree_name: str, mig_path: str, verbose: bool) -> N
 
     if tree_name:
         # if tree name is given then nothing to do for us
-        cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
         command.history(cfg, verbose=verbose)
     else:
 
         migrate_trees = migrate.MigrationTrees(mig_path)
         locations = migrate_trees.one_shot_locations(relative=False)
         for tree_name in locations.keys():
-            cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+            cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
             command.history(cfg, verbose=verbose)
