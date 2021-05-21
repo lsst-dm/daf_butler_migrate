@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -28,13 +28,13 @@ import logging
 
 from alembic import command
 
-from .. import config, smig
+from .. import config, migrate
 
 
 _LOG = logging.getLogger(__name__)
 
 
-def smig_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool) -> None:
+def migrate_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool) -> None:
     """Upgrade schema to a specified revision.
 
     Parameters
@@ -51,7 +51,7 @@ def smig_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sq
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
     """
-    db_url, schema = smig.butler_db_params(repo)
+    db_url, schema = migrate.butler_db_params(repo)
 
     if one_shot_tree:
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path, one_shot_tree=one_shot_tree)
@@ -59,6 +59,6 @@ def smig_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sq
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
     if schema:
-        cfg.set_section_option("smig", "schema", schema)
+        cfg.set_section_option("daf_butler_migrate", "schema", schema)
 
     command.upgrade(cfg, revision, sql=sql)

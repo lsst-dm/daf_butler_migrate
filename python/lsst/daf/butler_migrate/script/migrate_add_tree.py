@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -29,13 +29,13 @@ import os
 
 from alembic import command
 
-from .. import config, smig
+from .. import config, migrate
 
 
 _LOG = logging.getLogger(__name__)
 
 
-def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
+def migrate_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
     """Add one more revision tree.
 
     Parameters
@@ -66,7 +66,7 @@ def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
     "datasets").
     """
 
-    trees = smig.SmigTrees(mig_path)
+    trees = migrate.MigrationTrees(mig_path)
 
     manager = tree_name
     if one_shot:
@@ -99,6 +99,6 @@ def smig_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
 
     # create initial branch revision in a separate folder
     message = f"This is an initial pseudo-revision of the {tree_name!r} tree."
-    rev_id = smig.rev_id(manager)
+    rev_id = migrate.rev_id(manager)
     command.revision(cfg, head="base", rev_id=rev_id, branch_label=manager,
                      version_path=tree_folder, message=message)

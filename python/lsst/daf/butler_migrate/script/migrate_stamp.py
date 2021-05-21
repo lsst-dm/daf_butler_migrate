@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -29,13 +29,13 @@ from typing import Dict
 
 from alembic import command
 
-from .. import config, smig
+from .. import config, migrate
 
 
 _LOG = logging.getLogger(__name__)
 
 
-def smig_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
+def migrate_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
     """Stamp alembic revision table with current registry versions.
 
     Parameters
@@ -50,22 +50,22 @@ def smig_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
     dry_run : `bool`
         Skip all updates.
     """
-    db_url, schema = smig.butler_db_params(repo)
+    db_url, schema = migrate.butler_db_params(repo)
 
-    manager_versions = smig.manager_versions(db_url, schema)
+    manager_versions = migrate.manager_versions(db_url, schema)
 
     revisions: Dict[str, str] = {}
     for manager, (klass, version) in manager_versions.items():
         # for hash we use class name without module
         klass = klass.rpartition(".")[-1]
-        rev_id = smig.rev_id(manager, klass, version)
+        rev_id = migrate.rev_id(manager, klass, version)
         _LOG.debug("found revision (%s, %s, %s) -> %s", manager, klass, version, rev_id)
         revisions[manager] = rev_id
 
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     cfg.set_main_option("sqlalchemy.url", db_url)
     if schema:
-        cfg.set_section_option("smig", "schema", schema)
+        cfg.set_section_option("daf_butler_migrate", "schema", schema)
 
     if dry_run:
         print("Will store these revisions in alembic version table:")

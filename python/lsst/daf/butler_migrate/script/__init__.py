@@ -19,11 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .smig_add_tree import smig_add_tree
-from .smig_current import smig_current
-from .smig_downgrade import smig_downgrade
-from .smig_history import smig_history
-from .smig_revision import smig_revision
-from .smig_stamp import smig_stamp
-from .smig_trees import smig_trees
-from .smig_upgrade import smig_upgrade
+from .migrate_add_tree import migrate_add_tree
+from .migrate_current import migrate_current
+from .migrate_downgrade import migrate_downgrade
+from .migrate_history import migrate_history
+from .migrate_revision import migrate_revision
+from .migrate_stamp import migrate_stamp
+from .migrate_trees import migrate_trees
+from .migrate_upgrade import migrate_upgrade

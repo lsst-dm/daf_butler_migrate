@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -40,8 +40,9 @@ produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
 """
 
 
-class SmigTrees:
-    """Class encapsulating the knowledge of directory structures used by smig.
+class MigrationTrees:
+    """Class encapsulating the knowledge of directory structures used by
+    migrations.
 
     Parameters
     ----------

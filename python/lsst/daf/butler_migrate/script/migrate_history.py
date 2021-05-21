@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -26,10 +26,10 @@ from __future__ import annotations
 
 from alembic import command
 
-from .. import config, smig
+from .. import config, migrate
 
 
-def smig_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool) -> None:
+def migrate_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool) -> None:
     """Print version history for a given tree.
 
     Parameters
@@ -44,7 +44,7 @@ def smig_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool) -
         If `True` make a special one-shot migration.
     """
     if one_shot:
-        _one_shot_smig_history(tree_name, mig_path, verbose)
+        _one_shot_migrate_history(tree_name, mig_path, verbose)
         return None
 
     # limit to a single location if tree name is given
@@ -56,7 +56,7 @@ def smig_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool) -
     command.history(cfg, verbose=verbose)
 
 
-def _one_shot_smig_history(tree_name: str, mig_path: str, verbose: bool) -> None:
+def _one_shot_migrate_history(tree_name: str, mig_path: str, verbose: bool) -> None:
 
     if tree_name:
         # if tree name is given then nothing to do for us
@@ -64,8 +64,8 @@ def _one_shot_smig_history(tree_name: str, mig_path: str, verbose: bool) -> None
         command.history(cfg, verbose=verbose)
     else:
 
-        smig_trees = smig.SmigTrees(mig_path)
-        locations = smig_trees.one_shot_locations(relative=False)
+        migrate_trees = migrate.MigrationTrees(mig_path)
+        locations = migrate_trees.one_shot_locations(relative=False)
         for tree_name in locations.keys():
             cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
             command.history(cfg, verbose=verbose)

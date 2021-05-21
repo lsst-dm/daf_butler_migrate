@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -28,13 +28,13 @@ import logging
 
 from alembic import command
 
-from .. import config, smig
+from .. import config, migrate
 
 
 _LOG = logging.getLogger(__name__)
 
 
-def smig_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
+def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
     """Display current revisions for a database.
 
     Parameters
@@ -50,14 +50,14 @@ def smig_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
         If True then print versions numbers from butler, otherwise display
         information about alembic revisions.
     """
-    db_url, schema = smig.butler_db_params(repo)
+    db_url, schema = migrate.butler_db_params(repo)
 
     if butler:
         # Print current versions defined in butler.
-        manager_versions = smig.manager_versions(db_url, schema)
+        manager_versions = migrate.manager_versions(db_url, schema)
         if manager_versions:
             for manager, (klass, version) in sorted(manager_versions.items()):
-                rev_id = smig.rev_id(manager, klass.rpartition(".")[-1], version)
+                rev_id = migrate.rev_id(manager, klass.rpartition(".")[-1], version)
                 print(f"{manager}: {klass} {version} -> {rev_id}")
         else:
             print("No manager versions defined in butler_attributes table.")
@@ -66,5 +66,5 @@ def smig_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
         cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
         cfg.set_main_option("sqlalchemy.url", db_url)
         if schema:
-            cfg.set_section_option("smig", "schema", schema)
+            cfg.set_section_option("daf_butler_migrate", "schema", schema)
         command.current(cfg, verbose=verbose)

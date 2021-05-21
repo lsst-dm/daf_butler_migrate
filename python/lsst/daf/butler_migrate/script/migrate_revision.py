@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -30,7 +30,7 @@ from typing import Optional
 from alembic import command, util
 from alembic.script import ScriptDirectory
 
-from .. import config, smig
+from .. import config, migrate
 
 
 _LOG = logging.getLogger(__name__)
@@ -44,8 +44,8 @@ def _revision_exists(scripts, revision):
         return False
 
 
-def smig_revision(mig_path: str, tree_name: str, manager_class: str,
-                  version: str, one_shot: bool) -> None:
+def migrate_revision(mig_path: str, tree_name: str, manager_class: str,
+                     version: str, one_shot: bool) -> None:
     """Create new revision.
 
     Parameters
@@ -72,18 +72,18 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
 
     if one_shot:
         # One-shot migrations use special logic
-        _smig_revision_one_shot(mig_path, tree_name, manager_class, version)
+        _migrate_revision_one_shot(mig_path, tree_name, manager_class, version)
         return
 
     # We want to keep trees in separate directories
-    smig_trees = smig.SmigTrees(mig_path)
-    tree_folder = smig_trees.regular_version_location(tree_name, relative=False)
+    migrate_trees = migrate.MigrationTrees(mig_path)
+    tree_folder = migrate_trees.regular_version_location(tree_name, relative=False)
 
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
 
     # make sure that tree root is defined
-    root = smig.rev_id(tree_name)
+    root = migrate.rev_id(tree_name)
     if not _revision_exists(scripts, root):
         raise LookupError(f"Revision tree {tree_name!r} does not exist.")
 
@@ -101,7 +101,7 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
         splice = True
 
     # now can make actual revision
-    rev_id = smig.rev_id(tree_name, manager_class, version)
+    rev_id = migrate.rev_id(tree_name, manager_class, version)
     message = (
         f"Migration script for {manager_class} {version}."
     )
@@ -109,15 +109,15 @@ def smig_revision(mig_path: str, tree_name: str, manager_class: str,
                      splice=splice, version_path=tree_folder, message=message)
 
 
-def _smig_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
-                            version: str) -> None:
+def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
+                               version: str) -> None:
 
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     scripts = ScriptDirectory.from_config(cfg)
 
     # We want to keep trees in separate directories
-    smig_trees = smig.SmigTrees(mig_path)
-    tree_folder = smig_trees.one_shot_version_location(tree_name, relative=False)
+    migrate_trees = migrate.MigrationTrees(mig_path)
+    tree_folder = migrate_trees.one_shot_version_location(tree_name, relative=False)
 
     # we need a manager name, this is a label of a tree root
     bases = scripts.get_bases()
@@ -132,7 +132,7 @@ def _smig_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
     assert len(branches) == 1
     manager = branches.pop()
 
-    rev_id = smig.rev_id(manager, manager_class, version)
+    rev_id = migrate.rev_id(manager, manager_class, version)
     message = (
         f"Migration script for {manager_class} {version}."
     )

@@ -39,7 +39,7 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
-    schema = config.get_section_option("smig", "schema")
+    schema = config.get_section_option("daf_butler_migrate", "schema")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -77,7 +77,7 @@ def run_migrations_online():
         **kwargs
     )
 
-    schema = config.get_section_option("smig", "schema")
+    schema = config.get_section_option("daf_butler_migrate", "schema")
     with connectable.connect() as connection:
         context.configure(
             connection=connection,

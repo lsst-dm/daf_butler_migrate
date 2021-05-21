@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -20,16 +20,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 __all__ = [
-    "smig_history"
+    "migrate_add_tree",
+    "migrate_current",
+    "migrate_downgrade",
+    "migrate_history",
+    "migrate_revision",
+    "migrate_stamp",
+    "migrate_trees",
+    "migrate_upgrade",
 ]
 
 from .commands import (
-    smig_add_tree,
-    smig_current,
-    smig_downgrade,
-    smig_history,
-    smig_revision,
-    smig_stamp,
-    smig_trees,
-    smig_upgrade,
+    migrate_add_tree,
+    migrate_current,
+    migrate_downgrade,
+    migrate_history,
+    migrate_revision,
+    migrate_stamp,
+    migrate_trees,
+    migrate_upgrade,
 )

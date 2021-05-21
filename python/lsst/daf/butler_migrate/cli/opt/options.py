@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -23,23 +23,23 @@ from __future__ import annotations
 
 import click
 
-from ... import smig
+from ... import migrate
 
 
 mig_path_option = click.option(
     "--mig-path",
     type=click.Path(exists=False, file_okay=False, writable=True),
-    help="Top-level folder with migration scripts, default: " + smig.SmigTrees.migrations_folder(),
+    help="Top-level folder with migration scripts, default: " + migrate.MigrationTrees.migrations_folder(),
     metavar='PATH',
-    default=smig.SmigTrees.migrations_folder()
+    default=migrate.MigrationTrees.migrations_folder()
 )
 
 mig_path_exist_option = click.option(
     "--mig-path",
     type=click.Path(exists=True, file_okay=False, writable=True),
-    help="Top-level folder with migration scripts, default: " + smig.SmigTrees.migrations_folder(),
+    help="Top-level folder with migration scripts, default: " + migrate.MigrationTrees.migrations_folder(),
     metavar='PATH',
-    default=smig.SmigTrees.migrations_folder()
+    default=migrate.MigrationTrees.migrations_folder()
 )
 
 one_shot_option = click.option(

@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -28,10 +28,10 @@ from typing import Dict
 
 from alembic.script import Script, ScriptDirectory
 
-from .. import config, smig
+from .. import config, migrate
 
 
-def smig_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
+def migrate_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
     """Print list of known revision trees.
 
     Parameters
@@ -44,7 +44,7 @@ def smig_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
         If `True` print locations for special one-shot migrations.
     """
     if one_shot:
-        _smig_trees_one_shot(mig_path, verbose)
+        _migrate_trees_one_shot(mig_path, verbose)
         return
 
     cfg = config.SmigAlembicConfig.from_mig_path(mig_path)
@@ -74,13 +74,13 @@ def smig_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
             print(branch)
 
 
-def _smig_trees_one_shot(mig_path: str, verbose: bool) -> None:
+def _migrate_trees_one_shot(mig_path: str, verbose: bool) -> None:
 
     # one-shot trees are just folders in _oneshot folder
 
-    smig_trees = smig.SmigTrees(mig_path)
+    migrate_trees = migrate.MigrationTrees(mig_path)
 
-    one_shot_locations = smig_trees.one_shot_locations()
+    one_shot_locations = migrate_trees.one_shot_locations()
     tree_names = sorted(one_shot_locations.keys())
 
     for entry in sorted(tree_names):

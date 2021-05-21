@@ -1,4 +1,4 @@
-# This file is part of daf_butler_smig.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
@@ -27,7 +27,7 @@ from typing import Any, Optional
 
 from alembic.config import Config
 
-from . import smig
+from . import migrate
 
 
 _LOG = logging.getLogger(__name__)
@@ -67,24 +67,24 @@ class SmigAlembicConfig(Config):
         _LOG.debug("alembic_folder: %r, single_tree: %r, one_shot_tree: %r",
                    alembic_folder, single_tree, one_shot_tree)
 
-        smig_trees = smig.SmigTrees(mig_path)
+        migrate_trees = migrate.MigrationTrees(mig_path)
         if single_tree:
             if "/" in single_tree:
                 # means one-shot tree
-                version_locations = [smig_trees.one_shot_version_location(single_tree, relative=False)]
+                version_locations = [migrate_trees.one_shot_version_location(single_tree, relative=False)]
             else:
-                version_locations = [smig_trees.regular_version_location(single_tree, relative=False)]
+                version_locations = [migrate_trees.regular_version_location(single_tree, relative=False)]
         else:
-            version_locations = smig_trees.version_locations(one_shot_tree, relative=False)
+            version_locations = migrate_trees.version_locations(one_shot_tree, relative=False)
         _LOG.debug("version_locations: %r", version_locations)
         cfg.set_main_option("version_locations", " ".join(version_locations))
 
         # override default file template
         cfg.set_main_option("file_template", "%%(rev)s")
 
-        # we do not use this option, this is just to make sure that [smig]
-        # section exists
-        cfg.set_section_option("smig", "_smig", "")
+        # we do not use this option, this is just to make sure that
+        # [daf_butler_migrate] section exists
+        cfg.set_section_option("daf_butler_migrate", "_daf_butler_migrate", "")
 
         return cfg
 
