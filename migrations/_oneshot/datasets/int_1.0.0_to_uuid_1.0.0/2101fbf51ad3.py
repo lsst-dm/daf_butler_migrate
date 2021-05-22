@@ -7,6 +7,8 @@ Create Date: 2021-05-04 16:31:05.926989
 """
 from __future__ import annotations
 
+__all__ = ["get_digest"]
+
 import logging
 import time
 from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
@@ -15,6 +17,8 @@ import uuid
 from alembic import op, context
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
+
+from lsst.daf.butler_migrate.digests import get_digest
 
 
 # revision identifiers, used by Alembic.
@@ -151,9 +155,12 @@ def upgrade() -> None:
     _LOG.debug("Dropping mapping table")
     op.drop_table(ID_MAP_TABLE_NAME, schema)
 
+    # refresh schema from database
+    metadata = sa.schema.MetaData(bind, schema=schema)
+    metadata.reflect()
+
     # update version in butler_attributes table
-    butler_attributes = _get_table(metadata, "butler_attributes")
-    _update_butler_attributes(butler_attributes)
+    _update_butler_attributes(metadata)
 
 
 def downgrade() -> None:
@@ -502,7 +509,7 @@ def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
         )
 
 
-def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
+def _update_butler_attributes(metadata: sa.schema.MetaData) -> None:
     """Update contents of butler_attributes with new version and digests.
     """
     _LOG.debug("Updating butler_attributes metadata")
@@ -512,6 +519,7 @@ def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
     new_class = "ByDimensionsDatasetRecordStorageManagerUUID"
 
     bind = op.get_bind()
+    butler_attributes = _get_table(metadata, "butler_attributes")
 
     # remove existing records for old manager
     sql = butler_attributes.delete(
@@ -530,25 +538,27 @@ def _update_butler_attributes(butler_attributes: sa.schema.Table) -> None:
     bind.execute(sql)
 
     # insert version and digest for new manager
-    if bind.dialect.name == "postgresql":
-        digest = "0389bea276b430b9da7330c231a39af7"
-    elif bind.dialect.name == "sqlite":
-        digest = "338aa9bda15c2dc82ad04ac55e1b56bc"
-    else:
-        raise ValueError(f"Unexpected dialect type: {bind.dialect.name}")
+    tables = [
+        _get_table(metadata, "dataset"),
+        _get_table(metadata, "dataset_type"),
+    ]
+    digest = get_digest(tables, bind.dialect, nullable_columns={"id", "dataset_id"})
+    _LOG.debug("new schema digest for datasets manager: %s", digest)
     sql = butler_attributes.insert()
     bind.execute(sql, [
         {"name": f"version:{mgr_module}.{new_class}", "value": "1.0.0"},
         {"name": f"schema_digest:{mgr_module}.{new_class}", "value": digest},
     ])
 
-    # the change also affects schema digest for one other manager, this
-    # digest is for MonolithicDatastoreRegistryBridgeManager 0.2.0
+    # the change also affects schema digest for one other manager, recalculate
+    # digest for MonolithicDatastoreRegistryBridgeManager from new table schema
     manager = "lsst.daf.butler.registry.bridge.monolithic.MonolithicDatastoreRegistryBridgeManager"
-    if bind.dialect.name == "postgresql":
-        digest = "71d2aa0e9873e78d51808aa5e09c5bea"
-    elif bind.dialect.name == "sqlite":
-        digest = "3558b84d12fa04082ffd6935e0488922"
+    tables = [
+        _get_table(metadata, "dataset_location"),
+        _get_table(metadata, "dataset_location_trash"),
+    ]
+    digest = get_digest(tables, bind.dialect, nullable_columns={"dataset_id"})
+    _LOG.debug("new schema digest for bridge manager: %s", digest)
     sql = butler_attributes.update().values(
         value=digest
     ).where(
