@@ -1,11 +1,4 @@
 cmd:
   import: lsst.daf.butler_migrate.cli.cmd
   commands:
-    - migrate-add-tree
-    - migrate-current
-    - migrate-downgrade
-    - migrate-history
-    - migrate-revision
-    - migrate-stamp
-    - migrate-trees
-    - migrate-upgrade
+    - migrate

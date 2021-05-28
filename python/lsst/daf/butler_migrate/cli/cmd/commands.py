@@ -41,90 +41,97 @@ from ..opt import (
 )
 
 
-@click.command(short_help="Create new version tree.", cls=ButlerCommand)
+@click.group(short_help="Database schema migration commands.")
+def migrate() -> None:
+    """Set of command for managing and applying schema migrations.
+    """
+    pass
+
+
+@migrate.command(short_help="Create new version tree.", cls=ButlerCommand)
 @mig_path_option
 @one_shot_option
 @tree_name_argument()
-def migrate_add_tree(*args: Any, **kwargs: Any) -> None:
+def add_tree(*args: Any, **kwargs: Any) -> None:
     """Create new version tree.
     """
     script.migrate_add_tree(*args, **kwargs)
 
 
-@click.command(short_help="Show version history.", cls=ButlerCommand)
+@migrate.command(short_help="Show version history.", cls=ButlerCommand)
 @verbose_option
 @mig_path_exist_option
 @one_shot_option
 @tree_name_argument(required=False)
-def migrate_history(*args: Any, **kwargs: Any) -> None:
+def show_history(*args: Any, **kwargs: Any) -> None:
     """Display version history for a tree.
     """
     script.migrate_history(*args, **kwargs)
 
 
-@click.command(short_help="Create migration script for a new revision.", cls=ButlerCommand)
+@migrate.command(short_help="Create migration script for a new revision.", cls=ButlerCommand)
 @mig_path_exist_option
 @one_shot_option
 @tree_name_argument()
 @class_argument()
 @version_argument()
-def migrate_revision(*args: Any, **kwargs: Any) -> None:
+def add_revision(*args: Any, **kwargs: Any) -> None:
     """Create new revision.
     """
     script.migrate_revision(*args, **kwargs)
 
 
-@click.command(short_help="Print a list of known version trees.", cls=ButlerCommand)
+@migrate.command(short_help="Print a list of known version trees.", cls=ButlerCommand)
 @verbose_option
 @mig_path_exist_option
 @one_shot_option
-def migrate_trees(*args: Any, **kwargs: Any) -> None:
+def show_trees(*args: Any, **kwargs: Any) -> None:
     """Print a list of known version trees.
     """
     script.migrate_trees(*args, **kwargs)
 
 
-@click.command(short_help="Stamp revision table with current registry versions.", cls=ButlerCommand)
+@migrate.command(short_help="Stamp revision table with current registry versions.", cls=ButlerCommand)
 @mig_path_exist_option
 @purge_option
 @dry_run_option
 @repo_argument(required=True)
-def migrate_stamp(*args: Any, **kwargs: Any) -> None:
+def stamp(*args: Any, **kwargs: Any) -> None:
     """Stamp revision table with current registry versions.
     """
     script.migrate_stamp(*args, **kwargs)
 
 
-@click.command(short_help="Display current revisions for a database.", cls=ButlerCommand)
+@migrate.command(short_help="Display current revisions for a database.", cls=ButlerCommand)
 @verbose_option
 @click.option("--butler", help="Display butler version numbers for managers.", is_flag=True)
 @mig_path_exist_option
 @repo_argument(required=True)
-def migrate_current(*args: Any, **kwargs: Any) -> None:
+def show_current(*args: Any, **kwargs: Any) -> None:
     """Display current revisions for a database.
     """
     script.migrate_current(*args, **kwargs)
 
 
-@click.command(short_help="Upgrade schema to a specified revision.", cls=ButlerCommand)
+@migrate.command(short_help="Upgrade schema to a specified revision.", cls=ButlerCommand)
 @mig_path_exist_option
 @one_shot_tree_option
 @sql_option
 @repo_argument(required=True)
 @revision_argument(required=True)
-def migrate_upgrade(*args: Any, **kwargs: Any) -> None:
+def upgrade(*args: Any, **kwargs: Any) -> None:
     """Upgrade schema to a specified revision.
     """
     script.migrate_upgrade(*args, **kwargs)
 
 
-@click.command(short_help="Downgrade schema to a specified revision.", cls=ButlerCommand)
+@migrate.command(short_help="Downgrade schema to a specified revision.", cls=ButlerCommand)
 @mig_path_exist_option
 @one_shot_tree_option
 @sql_option
 @repo_argument(required=True)
 @revision_argument(required=True)
-def migrate_downgrade(*args: Any, **kwargs: Any) -> None:
+def downgrade(*args: Any, **kwargs: Any) -> None:
     """Downgrade schema to a specified revision.
     """
     script.migrate_downgrade(*args, **kwargs)

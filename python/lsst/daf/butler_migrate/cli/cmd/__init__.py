@@ -19,24 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__all__ = [
-    "migrate_add_tree",
-    "migrate_current",
-    "migrate_downgrade",
-    "migrate_history",
-    "migrate_revision",
-    "migrate_stamp",
-    "migrate_trees",
-    "migrate_upgrade",
-]
+__all__ = ["migrate"]
 
-from .commands import (
-    migrate_add_tree,
-    migrate_current,
-    migrate_downgrade,
-    migrate_history,
-    migrate_revision,
-    migrate_stamp,
-    migrate_trees,
-    migrate_upgrade,
-)
+from .commands import migrate
