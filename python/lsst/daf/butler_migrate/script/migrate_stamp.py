@@ -72,4 +72,5 @@ def migrate_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
         for manager, rev_id in revisions.items():
             print(f"  {manager}: {rev_id}")
     else:
-        command.stamp(cfg, list(revisions.values()), purge=purge)
+        for revision in revisions.values():
+            command.stamp(cfg, revision, purge=purge)
