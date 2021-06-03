@@ -89,6 +89,7 @@ while getopts hd:c: arg; do
     case "$arg" in
         h)
             usage
+            exit
             ;;
         d)
             folder="${OPTARG}"
@@ -98,6 +99,7 @@ while getopts hd:c: arg; do
             ;;
         ?)
             usage 1>&2
+            exit 1
             ;;
     esac
 done
@@ -161,7 +163,7 @@ butler migrate stamp "$repo"
 
 # Ready for migration, go get some coffee
 echo "[progress] $(timestamp) Running schema migration"
-butler --log-level debug migrate upgrade --one-shot-tree datasets/int_1.0.0_to_uuid_1.0.0 "$repo" 2101fbf51ad3
+butler --log-level debug --long-log migrate upgrade --one-shot-tree datasets/int_1.0.0_to_uuid_1.0.0 "$repo" 2101fbf51ad3
 echo "[progress] $(timestamp) Finished schema migration"
 
 # update butler config
