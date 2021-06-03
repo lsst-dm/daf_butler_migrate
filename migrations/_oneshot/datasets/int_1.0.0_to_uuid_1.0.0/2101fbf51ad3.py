@@ -465,7 +465,7 @@ def _rename_column(table_name: str, schema: str) -> None:
     id_col = _id_column_name(table_name)
     _LOG.debug("Renaming uuid column in table %s to %s", table_name, id_col)
 
-    op.alter_column(table_name, f"{id_col}_uuid", new_column_name=id_col, nullable=False)
+    op.alter_column(table_name, f"{id_col}_uuid", new_column_name=id_col, nullable=False, schema=schema)
 
 
 def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
