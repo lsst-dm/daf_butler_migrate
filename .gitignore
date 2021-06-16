@@ -10,7 +10,7 @@ config.log
 *Lib.py
 
 # Built by sconsUtils
-python/lsst/daf/butler/migrate/version.py
+version.py
 bin/
 
 # Pytest
