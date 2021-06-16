@@ -48,8 +48,6 @@ class MigrationTrees:
     ----------
     mig_path : `str`
         Top-level folder with migrations.
-    one_shot : `bool`
-        If `True` return locations for special one-shot migrations.
     """
 
     _MIGRATE_FOLDER_ENV = "DAF_BUTLER_MIGRATE_MIGRATIONS"
@@ -227,7 +225,7 @@ class MigrationTrees:
         ----------
         one_shot_tree : `str`, optional
             Name of a special one-shot tree to use instead of default tree for
-            corresponding manager, , contains manager name and tree name
+            corresponding manager, contains manager name and tree name
             separated by slash.
         relative : `bool`
             If True (default) then locations relative to top-level folder are
@@ -236,7 +234,7 @@ class MigrationTrees:
         Returns
         -------
         names : `list` [ `str` ]
-            String containing space-separated list of locations.
+            List of folder names.
         """
         locations = self.regular_version_locations(relative=relative)
         if one_shot_tree:

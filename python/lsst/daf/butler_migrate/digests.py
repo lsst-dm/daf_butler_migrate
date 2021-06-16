@@ -21,6 +21,9 @@
 
 from __future__ import annotations
 
+__all__ = ["get_digest"]
+
+
 import hashlib
 from typing import Iterable, Set
 
@@ -56,33 +59,49 @@ def get_digest(tables: Iterable[sqlalchemy.schema.Table],
     daf_butler method. Digest calculation probably needs an improvement, we
     need to revisit this at some point.
     """
-
-    def tableSchemaRepr(table: sqlalchemy.schema.Table) -> str:
-        """Make string representation of a single table schema.
-        """
-        tableSchemaRepr = [table.name]
-        schemaReps = []
-        for column in table.columns:
-            columnRep = f"COL,{column.name},{column.type.compile(dialect=dialect)}"
-            if column.primary_key:
-                columnRep += ",PK"
-            if column.nullable or column.name in nullable_columns:
-                columnRep += ",NULL"
-            schemaReps += [columnRep]
-        for fkConstr in table.foreign_key_constraints:
-            # for foreign key we include only one side of relations into
-            # digest, other side could be managed by different extension
-            fkReps = ["FK", fkConstr.name] + [fk.column.name for fk in fkConstr.elements]
-            fkRep = ",".join(fkReps)
-            schemaReps += [fkRep]
-        # sort everything to keep it stable
-        schemaReps.sort()
-        tableSchemaRepr += schemaReps
-        return ";".join(tableSchemaRepr)
-
     md5 = hashlib.md5()
-    tableSchemas = sorted(tableSchemaRepr(table) for table in tables)
+    tableSchemas = sorted(_tableSchemaRepr(table, dialect, nullable_columns) for table in tables)
     for tableRepr in tableSchemas:
         md5.update(tableRepr.encode())
     digest = md5.hexdigest()
     return digest
+
+
+def _tableSchemaRepr(table: sqlalchemy.schema.Table, dialect: sqlalchemy.engine.Dialect,
+                     nullable_columns: Set[str]) -> str:
+    """Make string representation of a single table schema.
+
+    Parameters
+    ----------
+    table : `sqlalchemy.schema.Table`
+        Tables instance.
+    dialect : `sqlalchemy.engine.Dialect`, optional
+        Dialect used to stringify types; needed to support dialect-specific
+        types.
+    nullable_columns: `set` of `str`
+        Names of columns which are forced to be nullable. This is used to
+        reproduce a case when some PK columns are defined as nullable in
+        daf_butler.
+    """
+    tableSchemaRepr = [table.name]
+    schemaReps = []
+    for column in table.columns:
+        columnRep = f"COL,{column.name},{column.type.compile(dialect=dialect)}"
+        if column.primary_key:
+            columnRep += ",PK"
+        # Unlike corresponding daf_butler method the test also includes
+        # explicit list of nullable columns. This is needed to match the
+        # behavior of daf_butler method.
+        if column.nullable or column.name in nullable_columns:
+            columnRep += ",NULL"
+        schemaReps += [columnRep]
+    for fkConstr in table.foreign_key_constraints:
+        # for foreign key we include only one side of relations into
+        # digest, other side could be managed by different extension
+        fkReps = ["FK", fkConstr.name] + [fk.column.name for fk in fkConstr.elements]
+        fkRep = ",".join(fkReps)
+        schemaReps += [fkRep]
+    # sort everything to keep it stable
+    schemaReps.sort()
+    tableSchemaRepr += schemaReps
+    return ";".join(tableSchemaRepr)
