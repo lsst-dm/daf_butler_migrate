@@ -56,8 +56,7 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> No
         # Print current versions defined in butler.
         manager_versions = migrate.manager_versions(db_url, schema)
         if manager_versions:
-            for manager, (klass, version) in sorted(manager_versions.items()):
-                rev_id = migrate.rev_id(manager, klass.rpartition(".")[-1], version)
+            for manager, (klass, version, rev_id) in sorted(manager_versions.items()):
                 print(f"{manager}: {klass} {version} -> {rev_id}")
         else:
             print("No manager versions defined in butler_attributes table.")

@@ -292,7 +292,7 @@ def butler_db_params(repo: str) -> Tuple[str, Optional[str]]:
     return db_url, schema
 
 
-def manager_versions(db_url: str, schema: Optional[str]) -> Mapping[str, Tuple[str, str]]:
+def manager_versions(db_url: str, schema: Optional[str]) -> Mapping[str, Tuple[str, str, str]]:
     """Retrieve current manager versions stored in butler_attributes table.
 
     Parameters
@@ -304,8 +304,8 @@ def manager_versions(db_url: str, schema: Optional[str]) -> Mapping[str, Tuple[s
     -------
     versions : `dict` [ `tuple` ]
         Mapping whose key is manager name (e.g. "datasets") and value is a
-        tuple consisting of manager class name (including package/module) and
-        version in X.Y.Z format.
+        tuple consisting of manager class name (including package/module),
+        version string in X.Y.Z format, and revision ID string/hash.
     """
     engine = sqlalchemy.engine.create_engine(db_url)
 
@@ -329,10 +329,12 @@ def manager_versions(db_url: str, schema: Optional[str]) -> Mapping[str, Tuple[s
                 versions[name.partition(":")[-1]] = value
 
     # combine them into one structure
-    revisions: Dict[str, Tuple[str, str]] = {}
+    revisions: Dict[str, Tuple[str, str, str]] = {}
     for manager, klass in managers.items():
         version = versions.get(klass)
         if version:
-            revisions[manager] = (klass, version)
+            # for revision ID we use class name without module
+            rev_id_str = rev_id(manager, klass.rpartition(".")[-1], version)
+            revisions[manager] = (klass, version, rev_id_str)
 
     return revisions

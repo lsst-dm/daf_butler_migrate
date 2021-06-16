@@ -55,10 +55,7 @@ def migrate_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
     manager_versions = migrate.manager_versions(db_url, schema)
 
     revisions: Dict[str, str] = {}
-    for manager, (klass, version) in manager_versions.items():
-        # for hash we use class name without module
-        klass = klass.rpartition(".")[-1]
-        rev_id = migrate.rev_id(manager, klass, version)
+    for manager, (klass, version, rev_id) in manager_versions.items():
         _LOG.debug("found revision (%s, %s, %s) -> %s", manager, klass, version, rev_id)
         revisions[manager] = rev_id
 
