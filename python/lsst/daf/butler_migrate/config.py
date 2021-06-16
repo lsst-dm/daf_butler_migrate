@@ -27,7 +27,7 @@ from typing import Any, Optional
 
 from alembic.config import Config
 
-from . import migrate
+from . import migrate, database
 
 
 _LOG = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ class MigAlembicConfig(Config):
 
     @classmethod
     def from_mig_path(cls, mig_path: str, *args: Any,
+                      db: Optional[database.Database] = None,
                       single_tree: Optional[str] = None,
                       one_shot_tree: Optional[str] = None,
                       **kwargs: Any) -> MigAlembicConfig:
@@ -50,6 +51,8 @@ class MigAlembicConfig(Config):
         ----------
         mig_path : `str`
             Filesystem path to location of revision trees.
+        db : `database.Database`
+            Object encapsulating access to database information.
         single_tree : `str`, optional
             If provided then Alembic will be configured with a single version
             tree only. If it contains slash charater then it is assumed to be
@@ -85,6 +88,11 @@ class MigAlembicConfig(Config):
         # we do not use this option, this is just to make sure that
         # [daf_butler_migrate] section exists
         cfg.set_section_option("daf_butler_migrate", "_daf_butler_migrate", "")
+
+        if db is not None:
+            cfg.set_main_option("sqlalchemy.url", db.db_url)
+            if db.schema:
+                cfg.set_section_option("daf_butler_migrate", "schema", db.schema)
 
         return cfg
 

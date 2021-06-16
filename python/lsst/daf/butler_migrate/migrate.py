@@ -24,12 +24,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
-from typing import Dict, List, Mapping, Tuple, Optional
-
-import sqlalchemy
-
-from lsst.daf.butler import ButlerConfig
-from lsst.daf.butler.core.repoRelocation import replaceRoot
+from typing import Dict, List, Optional
 
 
 _LOG = logging.getLogger(__name__)
@@ -243,98 +238,3 @@ class MigrationTrees:
                 raise ValueError("one-shot tree name is missing slash: f{one_shot_tree}")
             locations[manager] = self.one_shot_version_location(one_shot_tree, relative=relative)
         return list(locations.values())
-
-
-def rev_id(*args: str) -> str:
-    """Generate revision ID from arguments.
-
-    Returned string is a determenistic hash of the arguments.
-
-    Returns
-    -------
-    rev_id : `str`
-        Revision ID, 12-character string.
-    """
-    name = "-".join(args)
-    return uuid.uuid5(NS_UUID, name).hex[-12:]
-
-
-def butler_db_params(repo: str) -> Tuple[str, Optional[str]]:
-    """Extract registry database parameters from Butler configuration.
-
-    Parameters
-    ----------
-    repo : `str`
-        Path to butler configuration YAML file or a directory containing a
-        "butler.yaml" file.
-
-    Returns
-    -------
-    db_url : `str`
-        URL for registry database.
-    schema : `str` or `None`
-        Schema (namespace) name.
-    """
-    butlerConfig = ButlerConfig(repo)
-    if "root" in butlerConfig:
-        butlerRoot = butlerConfig["root"]
-    else:
-        butlerRoot = butlerConfig.configDir
-    db_url = replaceRoot(butlerConfig["registry", "db"], butlerRoot)
-    schema: Optional[str] = None
-    try:
-        schema = butlerConfig["registry", "namespace"]
-    except KeyError:
-        pass
-
-    _LOG.debug("db_url=%r, schema=%r", db_url, schema)
-
-    return db_url, schema
-
-
-def manager_versions(db_url: str, schema: Optional[str]) -> Mapping[str, Tuple[str, str, str]]:
-    """Retrieve current manager versions stored in butler_attributes table.
-
-    Parameters
-    ----------
-    db_url : `str`
-        URL for registry database.
-
-    Returns
-    -------
-    versions : `dict` [ `tuple` ]
-        Mapping whose key is manager name (e.g. "datasets") and value is a
-        tuple consisting of manager class name (including package/module),
-        version string in X.Y.Z format, and revision ID string/hash.
-    """
-    engine = sqlalchemy.engine.create_engine(db_url)
-
-    meta = sqlalchemy.schema.MetaData(schema=schema)
-    table = sqlalchemy.schema.Table(
-        "butler_attributes", meta,
-        sqlalchemy.schema.Column("name", sqlalchemy.Text),
-        sqlalchemy.schema.Column("value", sqlalchemy.Text),
-    )
-
-    # parse table contents into two separate maps
-    managers: Dict[str, str] = {}
-    versions: Dict[str, str] = {}
-    sql = sqlalchemy.sql.select([table.columns.name, table.columns.value])
-    with engine.connect() as connection:
-        result = connection.execute(sql)
-        for name, value in result:
-            if name.startswith("config:registry.managers."):
-                managers[name.rpartition(".")[-1]] = value
-            elif name.startswith("version:"):
-                versions[name.partition(":")[-1]] = value
-
-    # combine them into one structure
-    revisions: Dict[str, Tuple[str, str, str]] = {}
-    for manager, klass in managers.items():
-        version = versions.get(klass)
-        if version:
-            # for revision ID we use class name without module
-            rev_id_str = rev_id(manager, klass.rpartition(".")[-1], version)
-            revisions[manager] = (klass, version, rev_id_str)
-
-    return revisions

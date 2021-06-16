@@ -29,7 +29,7 @@ import os
 
 from alembic import command
 
-from .. import config, migrate
+from .. import config, migrate, revision
 
 
 _LOG = logging.getLogger(__name__)
@@ -99,6 +99,6 @@ def migrate_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
 
     # create initial branch revision in a separate folder
     message = f"This is an initial pseudo-revision of the {tree_name!r} tree."
-    rev_id = migrate.rev_id(manager)
+    rev_id = revision.rev_id(manager)
     command.revision(cfg, head="base", rev_id=rev_id, branch_label=manager,
                      version_path=tree_folder, message=message)

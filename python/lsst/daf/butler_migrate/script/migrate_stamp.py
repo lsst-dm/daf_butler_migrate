@@ -29,7 +29,7 @@ from typing import Dict
 
 from alembic import command
 
-from .. import config, migrate
+from .. import config, database
 
 
 _LOG = logging.getLogger(__name__)
@@ -50,24 +50,20 @@ def migrate_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
     dry_run : `bool`
         Skip all updates.
     """
-    db_url, schema = migrate.butler_db_params(repo)
+    db = database.Database.from_repo(repo)
 
-    manager_versions = migrate.manager_versions(db_url, schema)
+    manager_versions = db.manager_versions()
 
     revisions: Dict[str, str] = {}
     for manager, (klass, version, rev_id) in manager_versions.items():
         _LOG.debug("found revision (%s, %s, %s) -> %s", manager, klass, version, rev_id)
         revisions[manager] = rev_id
 
-    cfg = config.MigAlembicConfig.from_mig_path(mig_path)
-    cfg.set_main_option("sqlalchemy.url", db_url)
-    if schema:
-        cfg.set_section_option("daf_butler_migrate", "schema", schema)
-
     if dry_run:
         print("Will store these revisions in alembic version table:")
         for manager, rev_id in revisions.items():
             print(f"  {manager}: {rev_id}")
     else:
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
         for revision in revisions.values():
             command.stamp(cfg, revision, purge=purge)

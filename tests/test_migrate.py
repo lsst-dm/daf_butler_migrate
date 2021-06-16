@@ -23,8 +23,6 @@ import contextlib
 import os
 import unittest
 
-import sqlalchemy
-
 from lsst.daf.butler_migrate import migrate
 from lsst.utils.tests import temporaryDirectory
 
@@ -60,44 +58,8 @@ def make_migrations():
         yield folder
 
 
-# queries to create/fill butler_attributes table
-_queries = (
-    "CREATE TABLE butler_attributes (name TEXT, value TEXT NOT NULL, PRIMARY KEY (name))",
-    ("INSERT INTO butler_attributes (name, value) "
-     "VALUES ('config:registry.managers.manager1', 'pkg1.module1.Manager1') "),
-    ("INSERT INTO butler_attributes (name, value) "
-     "VALUES ('config:registry.managers.manager2', 'Manager2') "),
-    "INSERT INTO butler_attributes (name, value) VALUES ('version:pkg1.module1.Manager1', '0.0.1') ",
-    "INSERT INTO butler_attributes (name, value) VALUES ('version:Manager2', '1.0.0') ",
-)
-
-
-@contextlib.contextmanager
-def make_butler_attributes():
-    """Create simple sqlite database with butler_attributes populated.
-
-    Yields
-    ------
-    db_url : `str`
-        URL for the database.
-    """
-    with temporaryDirectory() as folder:
-        db_url = f"sqlite:///{folder}/test_db.sqlite3"
-        engine = sqlalchemy.create_engine(db_url)
-        with engine.connect() as conn:
-            for query in _queries:
-                conn.execute(sqlalchemy.text(query))
-        yield db_url
-
-
 class MigrateTestCase(unittest.TestCase):
     """Tests for migrate module"""
-
-    def test_rev_id(self):
-        """Test for rev_id method"""
-        args = ["ManagerClass", "1.0.0"]
-        rev_id = migrate.rev_id(*args)
-        self.assertEqual(rev_id, "41f090400d3f")
 
     def test_MigrationTrees(self):
         """Test for MigrationTrees methods"""
@@ -158,16 +120,6 @@ class MigrateTestCase(unittest.TestCase):
                 os.path.join(mig_path, "datasets"),
                 os.path.join(mig_path, "_oneshot/dimensions/mig2"),
             ])
-
-    def test_manager_versions(self):
-        """Test for manager_versions() method"""
-        with make_butler_attributes() as db_url:
-            manager_versions = migrate.manager_versions(db_url, None)
-            self.assertEqual(manager_versions, {
-                "manager1": ("pkg1.module1.Manager1", "0.0.1",
-                             migrate.rev_id("manager1", "Manager1", "0.0.1")),
-                "manager2": ("Manager2", "1.0.0", migrate.rev_id("manager2", "Manager2", "1.0.0")),
-            })
 
 
 if __name__ == "__main__":

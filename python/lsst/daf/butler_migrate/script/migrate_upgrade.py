@@ -25,10 +25,11 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 from alembic import command
 
-from .. import config, migrate
+from .. import config, database
 
 
 _LOG = logging.getLogger(__name__)
@@ -51,14 +52,11 @@ def migrate_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str,
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
     """
-    db_url, schema = migrate.butler_db_params(repo)
+    db = database.Database.from_repo(repo)
 
+    one_shot_arg: Optional[str] = None
     if one_shot_tree:
-        cfg = config.MigAlembicConfig.from_mig_path(mig_path, one_shot_tree=one_shot_tree)
-    else:
-        cfg = config.MigAlembicConfig.from_mig_path(mig_path)
-    cfg.set_main_option("sqlalchemy.url", db_url)
-    if schema:
-        cfg.set_section_option("daf_butler_migrate", "schema", schema)
+        one_shot_arg = one_shot_tree
+    cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db, one_shot_tree=one_shot_arg)
 
     command.upgrade(cfg, revision, sql=sql)

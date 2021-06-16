@@ -30,7 +30,7 @@ from typing import Optional
 from alembic import command, util
 from alembic.script import ScriptDirectory
 
-from .. import config, migrate
+from .. import config, migrate, revision
 
 
 _LOG = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str,
     scripts = ScriptDirectory.from_config(cfg)
 
     # make sure that tree root is defined
-    root = migrate.rev_id(tree_name)
+    root = revision.rev_id(tree_name)
     if not _revision_exists(scripts, root):
         raise LookupError(f"Revision tree {tree_name!r} does not exist.")
 
@@ -103,7 +103,7 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str,
         splice = True
 
     # now can make actual revision
-    rev_id = migrate.rev_id(tree_name, manager_class, version)
+    rev_id = revision.rev_id(tree_name, manager_class, version)
     message = (
         f"Migration script for {manager_class} {version}."
     )
@@ -134,7 +134,7 @@ def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str
     assert len(branches) == 1
     manager = branches.pop()
 
-    rev_id = migrate.rev_id(manager, manager_class, version)
+    rev_id = revision.rev_id(manager, manager_class, version)
     message = (
         f"Migration script for {manager_class} {version}."
     )
