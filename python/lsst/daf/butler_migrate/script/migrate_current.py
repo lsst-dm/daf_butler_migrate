@@ -64,3 +64,8 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> No
         # Revisions from alembic
         cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
         command.current(cfg, verbose=verbose)
+
+    # complain if alembic_version table is there but does not match manager
+    # versions
+    if db.alembic_revisions():
+        db.validate_revisions()

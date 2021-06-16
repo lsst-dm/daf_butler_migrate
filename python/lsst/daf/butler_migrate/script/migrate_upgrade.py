@@ -54,6 +54,15 @@ def migrate_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str,
     """
     db = database.Database.from_repo(repo)
 
+    # Check that alembic versions exist in database, we do not support
+    # migrations from empty state.
+    if not db.alembic_revisions():
+        raise ValueError("Alembic version table does not exist, you may need to run "
+                         "`butler migrate stamp` first.")
+
+    # check that alembic versions are consistent with butler
+    db.validate_revisions()
+
     one_shot_arg: Optional[str] = None
     if one_shot_tree:
         one_shot_arg = one_shot_tree
