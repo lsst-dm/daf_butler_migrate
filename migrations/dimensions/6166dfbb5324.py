@@ -1,7 +1,7 @@
 """This is an initial pseudo-revision of the 'dimensions' tree.
 
 Revision ID: 6166dfbb5324
-Revises: 
+Revises:
 Create Date: 2021-05-04 16:30:33.516669
 
 """
@@ -16,9 +16,9 @@ branch_labels = ('dimensions',)
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     raise NotImplementedError()
 
 
-def downgrade():
+def downgrade() -> None:
     raise NotImplementedError()

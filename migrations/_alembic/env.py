@@ -1,17 +1,11 @@
-from logging.config import fileConfig
-
 from sqlalchemy import engine_from_config
+from sqlalchemy import engine
 from sqlalchemy import pool
-
 from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -25,7 +19,7 @@ target_metadata = None
 # ... etc.
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -38,33 +32,50 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    schema = config.get_section_option("daf_butler_migrate", "schema")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table_schema=schema,
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
 
     """
+    # executemany_* arguments are postgres-specific, need to check dialect
+    url = engine.url.make_url(config.get_main_option("sqlalchemy.url"))
+    if url.get_dialect().name == "postgresql":
+        kwargs = dict(
+            executemany_mode='values',
+            executemany_values_page_size=10000,
+            executemany_batch_page_size=500,
+        )
+    else:
+        kwargs = {}
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        **kwargs
     )
 
+    schema = config.get_section_option("daf_butler_migrate", "schema")
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            version_table_schema=schema,
         )
 
         with context.begin_transaction():

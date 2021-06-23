@@ -1,7 +1,7 @@
 """This is an initial pseudo-revision of the 'collections' tree.
 
 Revision ID: 8d2e9de2f21f
-Revises: 
+Revises:
 Create Date: 2021-05-04 16:30:18.164583
 
 """
@@ -16,9 +16,9 @@ branch_labels = ('collections',)
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     raise NotImplementedError()
 
 
-def downgrade():
+def downgrade() -> None:
     raise NotImplementedError()

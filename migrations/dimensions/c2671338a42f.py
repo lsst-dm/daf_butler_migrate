@@ -16,9 +16,9 @@ branch_labels = ('dimensions-StaticDimensionRecordStorageManager',)
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     raise NotImplementedError()
 
 
-def downgrade():
+def downgrade() -> None:
     raise NotImplementedError()

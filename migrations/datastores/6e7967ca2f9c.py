@@ -1,7 +1,7 @@
 """This is an initial pseudo-revision of the 'datastores' tree.
 
 Revision ID: 6e7967ca2f9c
-Revises: 
+Revises:
 Create Date: 2021-05-04 16:30:58.787987
 
 """
@@ -16,9 +16,9 @@ branch_labels = ('datastores',)
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     raise NotImplementedError()
 
 
-def downgrade():
+def downgrade() -> None:
     raise NotImplementedError()

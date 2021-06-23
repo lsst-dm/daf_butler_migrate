@@ -16,9 +16,9 @@ branch_labels = ${repr(branch_labels)}
 depends_on = ${repr(depends_on)}
 
 
-def upgrade():
+def upgrade() -> None:
     ${upgrades if upgrades else "raise NotImplementedError()"}
 
 
-def downgrade():
+def downgrade() -> None:
     ${downgrades if downgrades else "raise NotImplementedError()"}
