@@ -164,7 +164,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade is not implemented, it may be realtively easy to do but it is
+    """Downgrade is not implemented, it may be relatively easy to do but it is
     likely we never need it.
     """
     raise NotImplementedError()
