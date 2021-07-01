@@ -135,3 +135,16 @@ def downgrade(*args: Any, **kwargs: Any) -> None:
     """Downgrade schema to a specified revision.
     """
     script.migrate_downgrade(*args, **kwargs)
+
+
+@migrate.command(short_help="Upgrade a SQLite registry by rewriting it from scratch.", cls=ButlerCommand)
+@click.argument("source", required=True)
+def rewrite_sqlite_registry(**kwargs):
+    """Transfer registry information from one registry to a new registry.
+
+    SOURCE is a URI to the Butler repository to be transferred.
+
+    On completion a new registry will be written in its place and the
+    old registry moved to a backup file.
+    """
+    script.rewrite_sqlite_registry(**kwargs)
