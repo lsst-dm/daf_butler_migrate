@@ -35,6 +35,7 @@ from lsst.daf.butler import (Config,
                              DatasetRef,
                              DatasetId,
                              ButlerURI,
+                             SkyPixDimension,
                              )
 from lsst.daf.butler.core.utils import getClassOf
 from lsst.daf.butler.transfers import RepoExportContext
@@ -52,11 +53,13 @@ def rewrite_sqlite_registry(source: str) -> None:
     * Export all dimension records, dataset types, collection information
       and import into new registry.
     * Transfer datasets without moving them.
+    * Move the original sqlite file and butler configuration to backup
+      versions and replace with the modified files.
 
-    Question is whether we get clever and try to move the old registry
-    out of the way and replace it along with a modified butler.yaml making
-    it look like an inplace rewrite.
-
+    Parameters
+    ----------
+    source : `str`
+        URI to a SQLite butler repository.
     """
 
     # Create the source butler early so we can ask it questions
@@ -104,13 +107,6 @@ def rewrite_sqlite_registry(source: str) -> None:
                     " Attempting migration anyhow. It should work so long as <butlerRoot> is not used"
                     " in config.", str(type(source_butler.datastore)))
 
-    # Export all the required information from the source butler.
-    exported = export_non_datasets(source_butler)
-
-    # Read all the datasets we are going to transfer, removing duplicates
-    # but using a list to have a fixed ordering.
-    source_refs = list(set(source_butler.registry.queryDatasets(..., collections=...)))
-
     # Create a temp directory for the temporary butler (put it inside
     # the existing repositor).
     root_dir = source_config_uri.dirname().ospath
@@ -125,18 +121,7 @@ def rewrite_sqlite_registry(source: str) -> None:
         # Create destination butler
         dest_butler = Butler(dest_config, writeable=True)
 
-        # Import the data to the new butler
-        import_non_datasets(dest_butler, exported)
-
-        # If this is int to UUID we force "raw" to generate reproductible UUID.
-        dest_refs = dest_butler.transfer_from(source_butler, source_refs, skip_missing=False,
-                                              id_gen_map={"raw": DatasetIdGenEnum.DATAID_TYPE})
-
-        # Map source ID to destination ID.
-        source_to_dest = {source.getCheckedId(): dest for source, dest in zip(source_refs, dest_refs)}
-
-        # Create any dataset associations
-        create_associations(source_butler, dest_butler, source_to_dest)
+        transfer_everything(source_butler, dest_butler)
 
         # Obtain the name of the sqlite file at the destination.
         dest_registry_uri = ButlerURI(dest_butler.registry._db.filename)
@@ -169,15 +154,38 @@ def rewrite_sqlite_registry(source: str) -> None:
 
     print(f"Successfully rewrote registry for butler at {source_config_uri}")
 
-    # The registry is now rewritten but the question is what to do next.
-    # This new registry points to the original datastore so people shouldn't
-    # think they can delete the original path completely.
-    # Do we:
-    # 1) Tell the user to move this new registry into the original location?
-    # 2) Move the original to a backup and move the new one to original,
-    #    deleting the destination? Copy it instead of move?
-    # 3) Not even ask for a destination location but have a temporary
-    #    location that we clean up after moving the new registry to old place.
+
+def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
+    """Transfer all content from one butler to another butler.
+
+    Assumes that both registries have a common dimension universe.
+
+    Parameters
+    ----------
+    source_butler : `Butler`
+        Butler to use as a source of information.
+    dest_butler : `Butler`
+        Butler to receive all the content.
+    """
+    # Read all the datasets we are going to transfer, removing duplicates.
+    # This set could be extremely large.  For now assume this is a small
+    # to medium-sized registry.
+    source_refs = set(source_butler.registry.queryDatasets(..., collections=...))
+
+    # Import the data to the new butler
+    transfer_non_datasets(source_butler, dest_butler)
+
+    # If this is int to UUID we force "raw" to generate reproductible UUID.
+    # If other raw-type datasets are to be supported the command will have
+    # to take an additional parameter.
+    dest_refs = dest_butler.transfer_from(source_butler, source_refs, skip_missing=False,
+                                          id_gen_map={"raw": DatasetIdGenEnum.DATAID_TYPE_RUN})
+
+    # Map source ID to destination ID.
+    source_to_dest = {source.getCheckedId(): dest for source, dest in zip(source_refs, dest_refs)}
+
+    # Create any dataset associations
+    create_associations(source_butler, dest_butler, source_to_dest)
 
 
 def create_associations(source_butler: Butler, dest_butler: Butler,
@@ -214,37 +222,43 @@ def create_associations(source_butler: Butler, dest_butler: Butler,
                 assert timespan is not None
                 dest_butler.registry.certify(collection, refs, timespan)
         else:
-            raise RuntimeError(f"Unexecpted collection association for collection {collection}"
+            raise RuntimeError(f"Unexpected collection association for collection {collection}"
                                f" of type {collection_type}.")
 
 
-def import_non_datasets(butler: Butler, yamlBuffer: io.StringIO) -> None:
-    """Import the YAML buffer."""
+def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
+    """Transfer everything that isn't related to datasets.
 
-    butler.import_(filename=yamlBuffer, format="yaml", reuseIds=True)
-
-
-def export_non_datasets(butler: Butler) -> io.StringIO:
-    """For the given butler, create an export YAML buffer."""
-    # Use a string buffer to avoid file I/O
+    Parameters
+    ----------
+    source_butler : `Butler`
+        Butler to extract information from.
+    dest_butler : `Butler`
+        Destination butler.
+    """
+    # Use a string buffer to save on file I/O.  This might result in twice
+    # the memory usage of using a file.
     yamlBuffer = io.StringIO()
+
     # Yaml is hard coded, since the class controls both ends of the
     # export/import.
-    BackendClass = getClassOf(butler._config["repo_transfer_formats", "yaml", "export"])
+    BackendClass = getClassOf(source_butler._config["repo_transfer_formats", "yaml", "export"])
     backend = BackendClass(yamlBuffer)
-    exporter = RepoExportContext(butler.registry, butler.datastore, backend, directory=None, transfer=None)
+    exporter = RepoExportContext(source_butler.registry, source_butler.datastore, backend,
+                                 directory=None, transfer=None)
 
     # Export all the collections.
-    for c in butler.registry.queryCollections(..., flattenChains=True, includeChains=True):
+    for c in source_butler.registry.queryCollections(..., flattenChains=True, includeChains=True):
         exporter.saveCollection(c)
 
     # Export all the dimensions.
-    for dimension in butler.registry.dimensions.getStaticElements():
+    for dimension in source_butler.registry.dimensions.getStaticElements():
         # Skip dimensions that are entirely derivable from other
-        # dimensions. "band" is always knowable from a "physical_filter".
-        if str(dimension).startswith("htm") or str(dimension) == "band":
+        # dimensions or are sky pixelization.
+        # eg "band" is always knowable from a "physical_filter".
+        if isinstance(dimension, SkyPixDimension) or dimension.viewOf is not None:
             continue
-        records = butler.registry.queryDimensionRecords(dimension)
+        records = source_butler.registry.queryDimensionRecords(dimension)
         exporter.saveDimensionData(dimension, records)
 
     exporter._finish()
@@ -252,4 +266,6 @@ def export_non_datasets(butler: Butler) -> io.StringIO:
     # reset the string buffer to the beginning so the read operation will
     # actually *see* the data that was exported.
     yamlBuffer.seek(0)
-    return yamlBuffer
+
+    # Import the buffer.
+    dest_butler.import_(filename=yamlBuffer, format="yaml", reuseIds=True)
