@@ -37,7 +37,7 @@ from lsst.daf.butler import (Config,
                              ButlerURI,
                              SkyPixDimension,
                              )
-from lsst.daf.butler.core.utils import getClassOf
+from lsst.utils.introspection import get_class_of
 from lsst.daf.butler.transfers import RepoExportContext
 from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
@@ -242,7 +242,7 @@ def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
 
     # Yaml is hard coded, since the class controls both ends of the
     # export/import.
-    BackendClass = getClassOf(source_butler._config["repo_transfer_formats", "yaml", "export"])
+    BackendClass = get_class_of(source_butler._config["repo_transfer_formats", "yaml", "export"])
     backend = BackendClass(yamlBuffer)
     exporter = RepoExportContext(source_butler.registry, source_butler.datastore, backend,
                                  directory=None, transfer=None)
