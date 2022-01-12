@@ -34,7 +34,6 @@ from lsst.daf.butler import (Config,
                              DatasetIdGenEnum,
                              DatasetRef,
                              DatasetId,
-                             ButlerURI,
                              SkyPixDimension,
                              )
 from lsst.utils.introspection import get_class_of
@@ -42,6 +41,7 @@ from lsst.daf.butler.transfers import RepoExportContext
 from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
+from lsst.resources import ResourcePath
 
 log = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def rewrite_sqlite_registry(source: str) -> None:
         transfer_everything(source_butler, dest_butler)
 
         # Obtain the name of the sqlite file at the destination.
-        dest_registry_uri = ButlerURI(dest_butler.registry._db.filename)
+        dest_registry_uri = ResourcePath(dest_butler.registry._db.filename)
 
         # Finished with writing to the destination butler so
         # delete the variable to ensure we can't do any more.
@@ -134,7 +134,7 @@ def rewrite_sqlite_registry(source: str) -> None:
         # and move the existing registry to a backup.
 
         # Relocate the source registry first
-        source_registry_uri = ButlerURI(source_butler.registry._db.filename)
+        source_registry_uri = ResourcePath(source_butler.registry._db.filename)
         new_basename = "original_" + source_registry_uri.basename()
         backup_registry_uri = source_registry_uri.updatedFile(new_basename)
         os.rename(source_registry_uri.ospath, backup_registry_uri.ospath)
