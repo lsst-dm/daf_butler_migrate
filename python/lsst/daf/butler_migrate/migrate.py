@@ -26,10 +26,9 @@ import os
 import uuid
 from typing import Dict, List, Optional
 
-
 _LOG = logging.getLogger(__name__)
 
-NS_UUID = uuid.UUID('840b31d9-05cd-5161-b2c8-00d32b280d0f')
+NS_UUID = uuid.UUID("840b31d9-05cd-5161-b2c8-00d32b280d0f")
 """Namespace UUID used for UUID5 generation. Do not change. This was
 produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
 """
@@ -76,8 +75,10 @@ class MigrationTrees:
         loc = os.environ.get(cls._MIGRATE_PACKAGE_ENV)
         if loc:
             return os.path.join(loc, "migrations")
-        raise ValueError(f"None of {cls._MIGRATE_FOLDER_ENV} or {cls._MIGRATE_PACKAGE_ENV}"
-                         " environment variables is defined")
+        raise ValueError(
+            f"None of {cls._MIGRATE_FOLDER_ENV} or {cls._MIGRATE_PACKAGE_ENV}"
+            " environment variables is defined"
+        )
 
     def alembic_folder(self, *, relative: bool = True) -> str:
         """Return location of folder with alembic files.

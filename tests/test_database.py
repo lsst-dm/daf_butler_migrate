@@ -23,18 +23,20 @@ import contextlib
 import unittest
 
 import sqlalchemy
-
 from lsst.daf.butler_migrate import database, revision
 from lsst.utils.tests import temporaryDirectory
-
 
 # queries to create/fill tables in test database
 _queries_butler_attributes = [
     "CREATE TABLE butler_attributes (name TEXT, value TEXT NOT NULL, PRIMARY KEY (name))",
-    ("INSERT INTO butler_attributes (name, value) "
-     "VALUES ('config:registry.managers.manager1', 'pkg1.module1.Manager1') "),
-    ("INSERT INTO butler_attributes (name, value) "
-     "VALUES ('config:registry.managers.manager2', 'Manager2') "),
+    (
+        "INSERT INTO butler_attributes (name, value) "
+        "VALUES ('config:registry.managers.manager1', 'pkg1.module1.Manager1') "
+    ),
+    (
+        "INSERT INTO butler_attributes (name, value) "
+        "VALUES ('config:registry.managers.manager2', 'Manager2') "
+    ),
     "INSERT INTO butler_attributes (name, value) VALUES ('version:pkg1.module1.Manager1', '0.0.1')",
     "INSERT INTO butler_attributes (name, value) VALUES ('version:Manager2', '1.0.0')",
 ]
@@ -42,9 +44,11 @@ _queries_butler_attributes = [
 _queries_alembic_version = [
     "CREATE TABLE alembic_version (version_num VARCHAR(32), PRIMARY KEY (version_num))",
     "INSERT INTO alembic_version (version_num) VALUES ('{}')".format(
-        revision.rev_id("manager1", "Manager1", "0.0.1")),
+        revision.rev_id("manager1", "Manager1", "0.0.1")
+    ),
     "INSERT INTO alembic_version (version_num) VALUES ('{}')".format(
-        revision.rev_id("manager2", "Manager2", "1.0.0")),
+        revision.rev_id("manager2", "Manager2", "1.0.0")
+    ),
 ]
 
 _broken_alembic_version = [
@@ -54,8 +58,9 @@ _broken_alembic_version = [
 
 
 @contextlib.contextmanager
-def make_revision_tables(make_butler=True, fill_butler=True, make_alembic=True,
-                         fill_alembic=True, broken_alembic=False):
+def make_revision_tables(
+    make_butler=True, fill_butler=True, make_alembic=True, fill_alembic=True, broken_alembic=False
+):
     """Create simple sqlite database with butler_attributes populated.
 
     Yields
@@ -95,11 +100,17 @@ class DatabaseTestCase(unittest.TestCase):
         with make_revision_tables() as db_url:
             db = database.Database(db_url)
             manager_versions = db.manager_versions()
-            self.assertEqual(manager_versions, {
-                "manager1": ("pkg1.module1.Manager1", "0.0.1",
-                             revision.rev_id("manager1", "Manager1", "0.0.1")),
-                "manager2": ("Manager2", "1.0.0", revision.rev_id("manager2", "Manager2", "1.0.0")),
-            })
+            self.assertEqual(
+                manager_versions,
+                {
+                    "manager1": (
+                        "pkg1.module1.Manager1",
+                        "0.0.1",
+                        revision.rev_id("manager1", "Manager1", "0.0.1"),
+                    ),
+                    "manager2": ("Manager2", "1.0.0", revision.rev_id("manager2", "Manager2", "1.0.0")),
+                },
+            )
 
     def test_alembic_revisions(self):
         """Test for alembic_revisions() method"""
@@ -107,10 +118,13 @@ class DatabaseTestCase(unittest.TestCase):
         with make_revision_tables() as db_url:
             db = database.Database(db_url)
             alembic_revisions = db.alembic_revisions()
-            self.assertCountEqual(alembic_revisions, [
-                revision.rev_id("manager1", "Manager1", "0.0.1"),
-                revision.rev_id("manager2", "Manager2", "1.0.0"),
-            ])
+            self.assertCountEqual(
+                alembic_revisions,
+                [
+                    revision.rev_id("manager1", "Manager1", "0.0.1"),
+                    revision.rev_id("manager2", "Manager2", "1.0.0"),
+                ],
+            )
 
     def test_validate_revisions(self):
         """Test for validate_revisions() method"""
@@ -121,32 +135,37 @@ class DatabaseTestCase(unittest.TestCase):
 
         with make_revision_tables(make_alembic=False) as db_url:
             db = database.Database(db_url)
-            with self.assertRaisesRegex(database.RevisionConsistencyError,
-                                        "alembic_version table does not exist or is empty"):
+            with self.assertRaisesRegex(
+                database.RevisionConsistencyError, "alembic_version table does not exist or is empty"
+            ):
                 db.validate_revisions()
 
         with make_revision_tables(fill_alembic=False) as db_url:
             db = database.Database(db_url)
-            with self.assertRaisesRegex(database.RevisionConsistencyError,
-                                        "alembic_version table does not exist or is empty"):
+            with self.assertRaisesRegex(
+                database.RevisionConsistencyError, "alembic_version table does not exist or is empty"
+            ):
                 db.validate_revisions()
 
         with make_revision_tables(make_butler=False) as db_url:
             db = database.Database(db_url)
-            with self.assertRaisesRegex(database.RevisionConsistencyError,
-                                        "butler_attributes table does not exist"):
+            with self.assertRaisesRegex(
+                database.RevisionConsistencyError, "butler_attributes table does not exist"
+            ):
                 db.validate_revisions()
 
         with make_revision_tables(fill_butler=False) as db_url:
             db = database.Database(db_url)
-            with self.assertRaisesRegex(database.RevisionConsistencyError,
-                                        "butler_attributes table is empty"):
+            with self.assertRaisesRegex(
+                database.RevisionConsistencyError, "butler_attributes table is empty"
+            ):
                 db.validate_revisions()
 
         with make_revision_tables(broken_alembic=True) as db_url:
             db = database.Database(db_url)
-            with self.assertRaisesRegex(database.RevisionConsistencyError,
-                                        "Butler and alembic revisions are inconsistent"):
+            with self.assertRaisesRegex(
+                database.RevisionConsistencyError, "Butler and alembic revisions are inconsistent"
+            ):
                 db.validate_revisions()
 
 

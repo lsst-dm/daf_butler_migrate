@@ -22,7 +22,6 @@
 import unittest
 
 import sqlalchemy
-
 from lsst.daf.butler_migrate import digests
 
 
@@ -32,7 +31,7 @@ class DigestsTestCase(unittest.TestCase):
     def test_tableSchemaRepr(self):
         """Test for _tableSchemaRepr method"""
 
-        engine = sqlalchemy.create_engine('sqlite://')
+        engine = sqlalchemy.create_engine("sqlite://")
 
         mdata = sqlalchemy.schema.MetaData()
         table1 = sqlalchemy.schema.Table(
@@ -46,20 +45,21 @@ class DigestsTestCase(unittest.TestCase):
             mdata,
             sqlalchemy.schema.Column("ColumnX", sqlalchemy.Integer, primary_key=True),
             sqlalchemy.schema.Column("ColumnY", sqlalchemy.Integer, nullable=True),
-            sqlalchemy.schema.ForeignKeyConstraint(["ColumnY"], ["Table1.ColumnA"], name="Table2_FK")
+            sqlalchemy.schema.ForeignKeyConstraint(["ColumnY"], ["Table1.ColumnA"], name="Table2_FK"),
         )
         table_repr = digests._tableSchemaRepr(table1, engine.dialect, set())
         self.assertEqual(table_repr, "Table1;COL,ColumnA,INTEGER,PK;COL,ColumnB,VARCHAR(32),NULL")
         table_repr = digests._tableSchemaRepr(table2, engine.dialect, set())
-        self.assertEqual(table_repr,
-                         "Table2;COL,ColumnX,INTEGER,PK;COL,ColumnY,INTEGER,NULL;FK,Table2_FK,ColumnA")
+        self.assertEqual(
+            table_repr, "Table2;COL,ColumnX,INTEGER,PK;COL,ColumnY,INTEGER,NULL;FK,Table2_FK,ColumnA"
+        )
 
     def test_tableSchemaRepr_nullpk(self):
         """Test for _tableSchemaRepr method in case when PK is declared
         nullable.
         """
 
-        engine = sqlalchemy.create_engine('sqlite://')
+        engine = sqlalchemy.create_engine("sqlite://")
 
         # sqlalchemy allows nullable PK columns in table definition
         mdata = sqlalchemy.schema.MetaData()

@@ -22,26 +22,27 @@
 __all__ = ("rewrite_sqlite_registry",)
 
 import io
-import os
 import logging
+import os
+import tempfile
 from collections import defaultdict
 from typing import Dict
-import tempfile
 
-from lsst.daf.butler import (Config,
-                             Butler,
-                             DatasetAssociation,
-                             DatasetIdGenEnum,
-                             DatasetRef,
-                             DatasetId,
-                             SkyPixDimension,
-                             )
-from lsst.utils.introspection import get_class_of
-from lsst.daf.butler.transfers import RepoExportContext
-from lsst.daf.butler.registry import CollectionType
+from lsst.daf.butler import (
+    Butler,
+    Config,
+    DatasetAssociation,
+    DatasetId,
+    DatasetIdGenEnum,
+    DatasetRef,
+    SkyPixDimension,
+)
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
+from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
+from lsst.daf.butler.transfers import RepoExportContext
 from lsst.resources import ResourcePath
+from lsst.utils.introspection import get_class_of
 
 log = logging.getLogger(__name__)
 
@@ -103,9 +104,12 @@ def rewrite_sqlite_registry(source: str) -> None:
         # change from the source (and will if set from root)
         config["datastore", "name"] = source_butler.datastore.name
     else:
-        log.warning("Migration is designed for FileDatastore but encountered %s."
-                    " Attempting migration anyhow. It should work so long as <butlerRoot> is not used"
-                    " in config.", str(type(source_butler.datastore)))
+        log.warning(
+            "Migration is designed for FileDatastore but encountered %s."
+            " Attempting migration anyhow. It should work so long as <butlerRoot> is not used"
+            " in config.",
+            str(type(source_butler.datastore)),
+        )
 
     # Create a temp directory for the temporary butler (put it inside
     # the existing repositor).
@@ -114,9 +118,12 @@ def rewrite_sqlite_registry(source: str) -> None:
 
         # Create a new butler with this config as the seed but ensuring that it
         # does not overwrite the datastore root.
-        dest_config = Butler.makeRepo(dest_dir, config,
-                                      dimensionConfig=source_butler.registry.dimensions.dimensionConfig,
-                                      forceConfigRoot=False)
+        dest_config = Butler.makeRepo(
+            dest_dir,
+            config,
+            dimensionConfig=source_butler.registry.dimensions.dimensionConfig,
+            forceConfigRoot=False,
+        )
 
         # Create destination butler
         dest_butler = Butler(dest_config, writeable=True)
@@ -178,8 +185,9 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
     # If this is int to UUID we force "raw" to generate reproductible UUID.
     # If other raw-type datasets are to be supported the command will have
     # to take an additional parameter.
-    dest_refs = dest_butler.transfer_from(source_butler, source_refs, skip_missing=False,
-                                          id_gen_map={"raw": DatasetIdGenEnum.DATAID_TYPE_RUN})
+    dest_refs = dest_butler.transfer_from(
+        source_butler, source_refs, skip_missing=False, id_gen_map={"raw": DatasetIdGenEnum.DATAID_TYPE_RUN}
+    )
 
     # Map source ID to destination ID.
     source_to_dest = {source.getCheckedId(): dest for source, dest in zip(source_refs, dest_refs)}
@@ -188,8 +196,9 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
     create_associations(source_butler, dest_butler, source_to_dest)
 
 
-def create_associations(source_butler: Butler, dest_butler: Butler,
-                        source_to_dest: Dict[DatasetId, DatasetRef]) -> None:
+def create_associations(
+    source_butler: Butler, dest_butler: Butler, source_to_dest: Dict[DatasetId, DatasetRef]
+) -> None:
     """Create TAGGED and CALIBRATION collections in destination."""
     # For every dataset type in destination, get TAGGED and CALIBRATION
     # collection associations from the source, converting the source ID
@@ -199,14 +208,18 @@ def create_associations(source_butler: Butler, dest_butler: Butler,
         collectionTypes = {CollectionType.TAGGED}
         if datasetType.isCalibration():
             collectionTypes.add(CollectionType.CALIBRATION)
-        type_associations = source_butler.registry.queryDatasetAssociations(datasetType,
-                                                                            collections=...,
-                                                                            collectionTypes=collectionTypes,
-                                                                            flattenChains=False,)
+        type_associations = source_butler.registry.queryDatasetAssociations(
+            datasetType,
+            collections=...,
+            collectionTypes=collectionTypes,
+            flattenChains=False,
+        )
         for association in type_associations:
-            dest_association = DatasetAssociation(ref=source_to_dest[association.ref.getCheckedId()],
-                                                  collection=association.collection,
-                                                  timespan=association.timespan)
+            dest_association = DatasetAssociation(
+                ref=source_to_dest[association.ref.getCheckedId()],
+                collection=association.collection,
+                timespan=association.timespan,
+            )
             associations_by_collection[association.collection].append(dest_association)
 
     # Update associations in the destination.
@@ -222,8 +235,10 @@ def create_associations(source_butler: Butler, dest_butler: Butler,
                 assert timespan is not None
                 dest_butler.registry.certify(collection, refs, timespan)
         else:
-            raise RuntimeError(f"Unexpected collection association for collection {collection}"
-                               f" of type {collection_type}.")
+            raise RuntimeError(
+                f"Unexpected collection association for collection {collection}"
+                f" of type {collection_type}."
+            )
 
 
 def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
@@ -244,8 +259,9 @@ def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
     # export/import.
     BackendClass = get_class_of(source_butler._config["repo_transfer_formats", "yaml", "export"])
     backend = BackendClass(yamlBuffer)
-    exporter = RepoExportContext(source_butler.registry, source_butler.datastore, backend,
-                                 directory=None, transfer=None)
+    exporter = RepoExportContext(
+        source_butler.registry, source_butler.datastore, backend, directory=None, transfer=None
+    )
 
     # Export all the collections.
     for c in source_butler.registry.queryCollections(..., flattenChains=True, includeChains=True):

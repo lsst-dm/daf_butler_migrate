@@ -22,15 +22,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Mapping, Tuple, Optional
+from typing import Dict, List, Mapping, Optional, Tuple
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
-
-from . import revision
 from lsst.daf.butler import ButlerConfig
 from lsst.daf.butler.core.repoRelocation import replaceRoot
 
+from . import revision
 
 _LOG = logging.getLogger(__name__)
 
@@ -51,6 +50,7 @@ class Database:
     schema : `str`, optional
         Database schema/namespace.
     """
+
     def __init__(self, db_url: str, schema: Optional[str] = None):
         self._db_url = db_url
         self._schema = schema
@@ -104,7 +104,8 @@ class Database:
 
         meta = sqlalchemy.schema.MetaData(schema=self._schema)
         table = sqlalchemy.schema.Table(
-            "butler_attributes", meta,
+            "butler_attributes",
+            meta,
             sqlalchemy.schema.Column("name", sqlalchemy.Text),
             sqlalchemy.schema.Column("value", sqlalchemy.Text),
         )
@@ -143,9 +144,9 @@ class Database:
         """
         engine = sqlalchemy.engine.create_engine(self._db_url)
         with engine.connect() as connection:
-            ctx = MigrationContext.configure(connection=connection, opts={
-                "version_table_schema": self._schema
-            })
+            ctx = MigrationContext.configure(
+                connection=connection, opts={"version_table_schema": self._schema}
+            )
             return list(ctx.get_current_heads())
 
     def validate_revisions(self) -> None:

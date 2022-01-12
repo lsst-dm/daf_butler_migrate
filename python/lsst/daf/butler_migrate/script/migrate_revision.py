@@ -32,13 +32,11 @@ from alembic.script import ScriptDirectory
 
 from .. import config, migrate, revision
 
-
 _LOG = logging.getLogger(__name__)
 
 
 def _revision_exists(scripts: ScriptDirectory, revision: str) -> bool:
-    """Check that revision exists.
-    """
+    """Check that revision exists."""
     try:
         scripts.get_revisions(revision)
         return True
@@ -46,8 +44,7 @@ def _revision_exists(scripts: ScriptDirectory, revision: str) -> bool:
         return False
 
 
-def migrate_revision(mig_path: str, tree_name: str, manager_class: str,
-                     version: str, one_shot: bool) -> None:
+def migrate_revision(mig_path: str, tree_name: str, manager_class: str, version: str, one_shot: bool) -> None:
     """Create new revision.
 
     Parameters
@@ -104,15 +101,19 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str,
 
     # now can make actual revision
     rev_id = revision.rev_id(tree_name, manager_class, version)
-    message = (
-        f"Migration script for {manager_class} {version}."
+    message = f"Migration script for {manager_class} {version}."
+    command.revision(
+        cfg,
+        head=head,
+        rev_id=rev_id,
+        branch_label=branch_label,
+        splice=splice,
+        version_path=tree_folder,
+        message=message,
     )
-    command.revision(cfg, head=head, rev_id=rev_id, branch_label=branch_label,
-                     splice=splice, version_path=tree_folder, message=message)
 
 
-def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str,
-                               version: str) -> None:
+def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str, version: str) -> None:
 
     cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     scripts = ScriptDirectory.from_config(cfg)
@@ -135,7 +136,5 @@ def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str
     manager = branches.pop()
 
     rev_id = revision.rev_id(manager, manager_class, version)
-    message = (
-        f"Migration script for {manager_class} {version}."
-    )
+    message = f"Migration script for {manager_class} {version}."
     command.revision(cfg, head=f"{manager}@head", rev_id=rev_id, version_path=tree_folder, message=message)

@@ -27,8 +27,7 @@ from typing import Any, Optional
 
 from alembic.config import Config
 
-from . import migrate, database
-
+from . import database, migrate
 
 _LOG = logging.getLogger(__name__)
 
@@ -36,15 +35,18 @@ _MIGRATE_PACKAGE_ENV = "DAF_BUTLER_MIGRATE_DIR"
 
 
 class MigAlembicConfig(Config):
-    """Implementation of alembic config class which overrides few methods.
-    """
+    """Implementation of alembic config class which overrides few methods."""
 
     @classmethod
-    def from_mig_path(cls, mig_path: str, *args: Any,
-                      db: Optional[database.Database] = None,
-                      single_tree: Optional[str] = None,
-                      one_shot_tree: Optional[str] = None,
-                      **kwargs: Any) -> MigAlembicConfig:
+    def from_mig_path(
+        cls,
+        mig_path: str,
+        *args: Any,
+        db: Optional[database.Database] = None,
+        single_tree: Optional[str] = None,
+        one_shot_tree: Optional[str] = None,
+        **kwargs: Any,
+    ) -> MigAlembicConfig:
         """Create new configuration object.
 
         Parameters
@@ -67,8 +69,12 @@ class MigAlembicConfig(Config):
         cfg = cls(ini_path, *args, **kwargs)
         cfg.set_main_option("script_location", alembic_folder)
 
-        _LOG.debug("alembic_folder: %r, single_tree: %r, one_shot_tree: %r",
-                   alembic_folder, single_tree, one_shot_tree)
+        _LOG.debug(
+            "alembic_folder: %r, single_tree: %r, one_shot_tree: %r",
+            alembic_folder,
+            single_tree,
+            one_shot_tree,
+        )
 
         migrate_trees = migrate.MigrationTrees(mig_path)
         if single_tree:
