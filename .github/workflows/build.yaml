@@ -57,7 +57,7 @@ jobs:
           DAF_BUTLER_MIGRATE_DIR: .
           DAF_BUTLER_MIGRATE_MIGRATIONS: ./migrations
         run: |
-          pytest -r a -v -n 3 --open-files --cov=lsst.resources --cov=tests --cov-report=xml --cov-report=term --cov-branch
+          pytest -r a -v -n 3 --open-files --cov=lsst.daf.butler_migrate --cov=tests --cov-report=xml --cov-report=term --cov-branch
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v2
         with:

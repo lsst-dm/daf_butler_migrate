@@ -22,3 +22,6 @@ pytest_session.txt
 
 # all migration results go here
 results/
+
+# setuptools
+python/*.egg-info/
