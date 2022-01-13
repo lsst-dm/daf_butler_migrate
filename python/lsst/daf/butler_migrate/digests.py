@@ -30,9 +30,12 @@ from typing import Iterable, Set
 import sqlalchemy
 
 
-def get_digest(tables: Iterable[sqlalchemy.schema.Table],
-               dialect: sqlalchemy.engine.Dialect, *,
-               nullable_columns: Set[str] = set()) -> str:
+def get_digest(
+    tables: Iterable[sqlalchemy.schema.Table],
+    dialect: sqlalchemy.engine.Dialect,
+    *,
+    nullable_columns: Set[str] = set(),
+) -> str:
     """Calculate digest for a schema based on list of tables schemas.
 
     Parameters
@@ -67,8 +70,9 @@ def get_digest(tables: Iterable[sqlalchemy.schema.Table],
     return digest
 
 
-def _tableSchemaRepr(table: sqlalchemy.schema.Table, dialect: sqlalchemy.engine.Dialect,
-                     nullable_columns: Set[str]) -> str:
+def _tableSchemaRepr(
+    table: sqlalchemy.schema.Table, dialect: sqlalchemy.engine.Dialect, nullable_columns: Set[str]
+) -> str:
     """Make string representation of a single table schema.
 
     Parameters

@@ -25,22 +25,24 @@ from lsst.daf.butler.cli.utils import MWArgumentDecorator
 
 tree_name_argument = MWArgumentDecorator(
     "tree-name",
-    help=("TREE_NAME is the revision tree name, usually it is the name "
-          "of a registry manager (e.g. 'datasets').")
+    help=(
+        "TREE_NAME is the revision tree name, usually it is the name "
+        "of a registry manager (e.g. 'datasets')."
+    ),
 )
 
 class_argument = MWArgumentDecorator(
-    "manager-class",
-    help="MANAGER_CLASS is the name of the manager class, not including module name."
+    "manager-class", help="MANAGER_CLASS is the name of the manager class, not including module name."
 )
 
 version_argument = MWArgumentDecorator(
-    "version",
-    help="VERSION is the version of manager class, typically in X.Y.Z notation."
+    "version", help="VERSION is the version of manager class, typically in X.Y.Z notation."
 )
 
 revision_argument = MWArgumentDecorator(
     "revision",
-    help=("REVISION is a target alembic revision, in offline mode it can also "
-          "specify initial revision using INITIAL:TARGET format.")
+    help=(
+        "REVISION is a target alembic revision, in offline mode it can also "
+        "specify initial revision using INITIAL:TARGET format."
+    ),
 )

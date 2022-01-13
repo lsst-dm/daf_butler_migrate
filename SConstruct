@@ -1,6 +1,6 @@
 # -*- python -*-
 from lsst.sconsUtils import scripts
 # Python-only package
-# Do not want version.py generated because it is made in wrong location
+# Must explicitly define the version location because of the underscore.
 scripts.BasicSConstruct("daf_butler_migrate", disableCc=True, noCfgFile=True,
-                        versionModuleName=None)
+                        versionModuleName="python/lsst/daf/butler_migrate/version.py")

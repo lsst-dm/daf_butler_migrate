@@ -22,7 +22,6 @@
 from __future__ import annotations
 
 import sqlalchemy
-
 from lsst.daf.butler.registry.nameShrinker import NameShrinker
 
 

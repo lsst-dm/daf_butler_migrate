@@ -26,7 +26,6 @@ import unittest
 from lsst.daf.butler_migrate import migrate
 from lsst.utils.tests import temporaryDirectory
 
-
 # folders to create in migrations directory
 _folders = (
     "_alembic",
@@ -73,40 +72,57 @@ class MigrateTestCase(unittest.TestCase):
             self.assertEqual(mtrees.alembic_folder(relative=False), os.path.join(mig_path, "_alembic"))
 
             self.assertEqual(mtrees.regular_version_location("managerA"), "managerA")
-            self.assertEqual(mtrees.regular_version_location("managerA", relative=False),
-                             os.path.join(mig_path, "managerA"))
+            self.assertEqual(
+                mtrees.regular_version_location("managerA", relative=False),
+                os.path.join(mig_path, "managerA"),
+            )
 
             locations = mtrees.regular_version_locations()
-            self.assertEqual(locations, {
-                "collections": "collections",
-                "datasets": "datasets",
-                "dimensions": "dimensions",
-            })
+            self.assertEqual(
+                locations,
+                {
+                    "collections": "collections",
+                    "datasets": "datasets",
+                    "dimensions": "dimensions",
+                },
+            )
             locations = mtrees.regular_version_locations(relative=False)
-            self.assertEqual(locations, {
-                "collections": os.path.join(mig_path, "collections"),
-                "datasets": os.path.join(mig_path, "datasets"),
-                "dimensions": os.path.join(mig_path, "dimensions"),
-            })
+            self.assertEqual(
+                locations,
+                {
+                    "collections": os.path.join(mig_path, "collections"),
+                    "datasets": os.path.join(mig_path, "datasets"),
+                    "dimensions": os.path.join(mig_path, "dimensions"),
+                },
+            )
 
             locations = mtrees.one_shot_locations()
-            self.assertEqual(locations, {
-                "datasets/migration1": "_oneshot/datasets/migration1",
-                "datasets/migration2": "_oneshot/datasets/migration2",
-                "dimensions/mig1": "_oneshot/dimensions/mig1",
-                "dimensions/mig2": "_oneshot/dimensions/mig2",
-            })
+            self.assertEqual(
+                locations,
+                {
+                    "datasets/migration1": "_oneshot/datasets/migration1",
+                    "datasets/migration2": "_oneshot/datasets/migration2",
+                    "dimensions/mig1": "_oneshot/dimensions/mig1",
+                    "dimensions/mig2": "_oneshot/dimensions/mig2",
+                },
+            )
 
             locations = mtrees.one_shot_locations("datasets")
-            self.assertEqual(locations, {
-                "datasets/migration1": "_oneshot/datasets/migration1",
-                "datasets/migration2": "_oneshot/datasets/migration2",
-            })
+            self.assertEqual(
+                locations,
+                {
+                    "datasets/migration1": "_oneshot/datasets/migration1",
+                    "datasets/migration2": "_oneshot/datasets/migration2",
+                },
+            )
             locations = mtrees.one_shot_locations("datasets", relative=False)
-            self.assertEqual(locations, {
-                "datasets/migration1": os.path.join(mig_path, "_oneshot/datasets/migration1"),
-                "datasets/migration2": os.path.join(mig_path, "_oneshot/datasets/migration2"),
-            })
+            self.assertEqual(
+                locations,
+                {
+                    "datasets/migration1": os.path.join(mig_path, "_oneshot/datasets/migration1"),
+                    "datasets/migration2": os.path.join(mig_path, "_oneshot/datasets/migration2"),
+                },
+            )
 
             locations = mtrees.version_locations()
             self.assertCountEqual(locations, ["collections", "datasets", "dimensions"])
@@ -115,11 +131,14 @@ class MigrateTestCase(unittest.TestCase):
             self.assertCountEqual(locations, ["collections", "_oneshot/datasets/migration1", "dimensions"])
 
             locations = mtrees.version_locations("dimensions/mig2", relative=False)
-            self.assertCountEqual(locations, [
-                os.path.join(mig_path, "collections"),
-                os.path.join(mig_path, "datasets"),
-                os.path.join(mig_path, "_oneshot/dimensions/mig2"),
-            ])
+            self.assertCountEqual(
+                locations,
+                [
+                    os.path.join(mig_path, "collections"),
+                    os.path.join(mig_path, "datasets"),
+                    os.path.join(mig_path, "_oneshot/dimensions/mig2"),
+                ],
+            )
 
 
 if __name__ == "__main__":

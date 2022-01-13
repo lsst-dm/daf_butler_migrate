@@ -25,54 +25,36 @@ import click
 
 from ... import migrate
 
-
 mig_path_option = click.option(
     "--mig-path",
     type=click.Path(exists=False, file_okay=False, writable=True),
     help="Top-level folder with migration scripts, default: " + migrate.MigrationTrees.migrations_folder(),
-    metavar='PATH',
-    default=migrate.MigrationTrees.migrations_folder()
+    metavar="PATH",
+    default=migrate.MigrationTrees.migrations_folder(),
 )
 
 mig_path_exist_option = click.option(
     "--mig-path",
     type=click.Path(exists=True, file_okay=False, writable=True),
     help="Top-level folder with migration scripts, default: " + migrate.MigrationTrees.migrations_folder(),
-    metavar='PATH',
-    default=migrate.MigrationTrees.migrations_folder()
+    metavar="PATH",
+    default=migrate.MigrationTrees.migrations_folder(),
 )
 
-one_shot_option = click.option(
-    "--one-shot",
-    help="Use special one-shot history trees.",
-    is_flag=True
-)
+one_shot_option = click.option("--one-shot", help="Use special one-shot history trees.", is_flag=True)
 
 one_shot_tree_option = click.option(
-    "--one-shot-tree",
-    help="Use special one-shot history tree instead of regular history."
+    "--one-shot-tree", help="Use special one-shot history tree instead of regular history."
 )
 
-verbose_option = click.option(
-    "-v", "--verbose",
-    help="Print detailed information.",
-    is_flag=True
-)
+verbose_option = click.option("-v", "--verbose", help="Print detailed information.", is_flag=True)
 
-dry_run_option = click.option(
-    "-n", "--dry-run",
-    help="Do not execute actions, only report.",
-    is_flag=True
-)
+dry_run_option = click.option("-n", "--dry-run", help="Do not execute actions, only report.", is_flag=True)
 
 purge_option = click.option(
-    "--purge",
-    help="Remove existing version table before saving new versions.",
-    is_flag=True
+    "--purge", help="Remove existing version table before saving new versions.", is_flag=True
 )
 
 sql_option = click.option(
-    "--sql",
-    help="Offline mode, dump SQL instead of executing migration on a database.",
-    is_flag=True
+    "--sql", help="Offline mode, dump SQL instead of executing migration on a database.", is_flag=True
 )

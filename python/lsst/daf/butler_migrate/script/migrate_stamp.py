@@ -31,7 +31,6 @@ from alembic import command
 
 from .. import config, database
 
-
 _LOG = logging.getLogger(__name__)
 
 
