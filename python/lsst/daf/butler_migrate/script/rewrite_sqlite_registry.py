@@ -38,6 +38,7 @@ from lsst.daf.butler import (
     SkyPixDimension,
 )
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
+from lsst.daf.butler.registries.sql import SqlRegistry
 from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
 from lsst.daf.butler.transfers import RepoExportContext
@@ -66,6 +67,7 @@ def rewrite_sqlite_registry(source: str) -> None:
     # Create the source butler early so we can ask it questions
     # without assuming things.
     source_butler = Butler(source, writeable=False)
+    assert isinstance(source_butler.registry, SqlRegistry), "Expecting SqlRegistry instance"
 
     # Check that we are really working with a SQLite database.
     if not isinstance(source_butler.registry._db, SqliteDatabase):
@@ -98,7 +100,7 @@ def rewrite_sqlite_registry(source: str) -> None:
     # NOTE: Execution Butler creation has a similar problem with working
     # out how to refer back to the original datastore.
     if isinstance(source_butler.datastore, FileDatastore):
-        config["datastore", "root"] = str(source_butler.datastore.root)  # type: ignore
+        config["datastore", "root"] = str(source_butler.datastore.root)
 
         # Force the name of the datastore since that should not
         # change from the source (and will if set from root)
@@ -127,10 +129,13 @@ def rewrite_sqlite_registry(source: str) -> None:
 
         # Create destination butler
         dest_butler = Butler(dest_config, writeable=True)
+        assert isinstance(dest_butler.registry, SqlRegistry), "Expecting SqlRegistry instance"
+        assert isinstance(dest_butler.registry._db, SqliteDatabase), "Expecting SqliteDatabase instance"
 
         transfer_everything(source_butler, dest_butler)
 
         # Obtain the name of the sqlite file at the destination.
+        assert dest_butler.registry._db.filename is not None, "Expecting non-None filename from registry"
         dest_registry_uri = ResourcePath(dest_butler.registry._db.filename)
 
         # Finished with writing to the destination butler so
@@ -141,6 +146,7 @@ def rewrite_sqlite_registry(source: str) -> None:
         # and move the existing registry to a backup.
 
         # Relocate the source registry first
+        assert source_butler.registry._db.filename is not None, "Expecting non-None filename from registry"
         source_registry_uri = ResourcePath(source_butler.registry._db.filename)
         new_basename = "original_" + source_registry_uri.basename()
         backup_registry_uri = source_registry_uri.updatedFile(new_basename)
