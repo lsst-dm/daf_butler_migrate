@@ -46,3 +46,12 @@ revision_argument = MWArgumentDecorator(
         "specify initial revision using INITIAL:TARGET format."
     ),
 )
+
+manager_argument = MWArgumentDecorator(
+    "manager",
+    help=(
+        "MANAGER is a name of the manager for which to stamp the revision, "
+        "if missing then all managers are stamped."
+    ),
+    required=False,
+)

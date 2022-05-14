@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Dict, List, Mapping, Optional, Tuple
 
@@ -50,6 +51,12 @@ class Database:
     schema : `str`, optional
         Database schema/namespace.
     """
+
+    dimensions_json_key = "config:dimensions.json"
+    """Key for dimensions configuration in butler_attributes table (`str`)"""
+
+    dimensions_config_manager = "dimensions-config"
+    """Name of the special dimensions-config pseudo-manager (`str`)"""
 
     def __init__(self, db_url: str, schema: Optional[str] = None):
         self._db_url = db_url
@@ -90,8 +97,41 @@ class Database:
         """Schema (namespace) name (`str`)"""
         return self._schema
 
-    def manager_versions(self) -> Mapping[str, Tuple[str, str, str]]:
+    def dimensions_namespace(self) -> Optional[str]:
+        """Return dimensions namespace from a stored configuration.
+
+        Returns
+        -------
+        namespace: `str` or `None`
+            Dimensions namespace or `None` if not defined.
+        """
+        engine = sqlalchemy.engine.create_engine(self._db_url)
+
+        meta = sqlalchemy.schema.MetaData(schema=self._schema)
+        table = sqlalchemy.schema.Table(
+            "butler_attributes",
+            meta,
+            sqlalchemy.schema.Column("name", sqlalchemy.Text),
+            sqlalchemy.schema.Column("value", sqlalchemy.Text),
+        )
+
+        sql = sqlalchemy.sql.select(table.columns.value).where(table.columns.name == self.dimensions_json_key)
+        with engine.connect() as connection:
+            result = connection.execute(sql)
+            row = result.fetchone()
+            if row is None:
+                return None
+            dimensions_json = json.loads(row[0])
+            return dimensions_json.get("namespace")
+
+    def manager_versions(self, namespace: Optional[str] = None) -> Mapping[str, Tuple[str, str, str]]:
         """Retrieve current manager versions stored in butler_attributes table.
+
+        Parameters
+        ----------
+        namespace: `str`, optional
+            Dimensions namespace to use when "namespace" key is not present in
+            ``config:dimensions.json``.
 
         Returns
         -------
@@ -121,6 +161,15 @@ class Database:
                     managers[name.rpartition(".")[-1]] = value
                 elif name.startswith("version:"):
                     versions[name.partition(":")[-1]] = value
+                elif name == self.dimensions_json_key:
+                    dimensions_json = json.loads(value)
+                    namespace = dimensions_json.get("namespace", namespace)
+                    # If namespace is missing and not provided with parameters
+                    # then don't include pseudo-manager (but CLI will force
+                    # parameter use if stored one is missing).
+                    if namespace is not None:
+                        managers[self.dimensions_config_manager] = namespace
+                        versions[namespace] = str(dimensions_json["version"])
 
         # combine them into one structure
         revisions: Dict[str, Tuple[str, str, str]] = {}
@@ -149,8 +198,14 @@ class Database:
             )
             return list(ctx.get_current_heads())
 
-    def validate_revisions(self) -> None:
+    def validate_revisions(self, namespace: Optional[str] = None) -> None:
         """Verify that consistency of alembic revisions and butler versions.
+
+        Parameters
+        ----------
+        namespace: `str`, optional
+            Dimensions namespace to use when "namespace" key is not present in
+            ``config:dimensions.json``.
 
         Raises
         ------
@@ -160,7 +215,7 @@ class Database:
         """
         # TODO: possible optimization to reuse a connection to database
         try:
-            manager_versions = self.manager_versions()
+            manager_versions = self.manager_versions(namespace)
         except sqlalchemy.exc.OperationalError:
             raise RevisionConsistencyError("butler_attributes table does not exist")
         alembic_revisions = self.alembic_revisions()

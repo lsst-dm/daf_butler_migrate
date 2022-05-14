@@ -58,3 +58,9 @@ purge_option = click.option(
 sql_option = click.option(
     "--sql", help="Offline mode, dump SQL instead of executing migration on a database.", is_flag=True
 )
+
+namespace_option = click.option(
+    "--namespace",
+    help="Namespace to use when 'namespace' key is not present in the stored dimesions configuration",
+    default=None,
+)

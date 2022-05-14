@@ -25,7 +25,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from alembic import command
 
@@ -34,7 +34,9 @@ from .. import config, database
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
+def migrate_stamp(
+    repo: str, mig_path: str, purge: bool, dry_run: bool, namespace: Optional[str], manager: Optional[str]
+) -> None:
     """Stamp alembic revision table with current registry versions.
 
     Parameters
@@ -48,15 +50,31 @@ def migrate_stamp(repo: str, mig_path: str, purge: bool, dry_run: bool) -> None:
         Delete all entries in the version table before stamping.
     dry_run : `bool`
         Skip all updates.
+    namespace: `str`, optional
+        Dimensions namespace to use when "namespace" key is not present in
+        ``config:dimensions.json``.
+    manager: `str`, Optional
+        Name of the manager to stamp, if `None` then all managers are stamped.
     """
     db = database.Database.from_repo(repo)
 
-    manager_versions = db.manager_versions()
+    if namespace is None and db.dimensions_namespace() is None:
+        raise ValueError(
+            "The `--namespace` option is required when namespace is missing from"
+            " stored dimensions configuration"
+        )
+
+    manager_versions = db.manager_versions(namespace)
 
     revisions: Dict[str, str] = {}
-    for manager, (klass, version, rev_id) in manager_versions.items():
-        _LOG.debug("found revision (%s, %s, %s) -> %s", manager, klass, version, rev_id)
-        revisions[manager] = rev_id
+    for mgr_name, (klass, version, rev_id) in manager_versions.items():
+        _LOG.debug("found revision (%s, %s, %s) -> %s", mgr_name, klass, version, rev_id)
+        revisions[mgr_name] = rev_id
+
+    if manager:
+        if manager not in revisions:
+            raise ValueError(f"Unknown manager name {manager}")
+        revisions = {manager: revisions[manager]}
 
     if dry_run:
         print("Will store these revisions in alembic version table:")
