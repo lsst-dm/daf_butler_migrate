@@ -61,6 +61,6 @@ sql_option = click.option(
 
 namespace_option = click.option(
     "--namespace",
-    help="Namespace to use when 'namespace' key is not present in the stored dimesions configuration",
+    help="Namespace to use when 'namespace' key is not present in the stored dimensions configuration",
     default=None,
 )
