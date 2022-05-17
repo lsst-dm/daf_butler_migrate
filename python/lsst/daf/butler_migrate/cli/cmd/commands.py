@@ -32,6 +32,7 @@ from ..opt import (
     manager_argument,
     mig_path_exist_option,
     mig_path_option,
+    namespace_argument,
     namespace_option,
     one_shot_option,
     one_shot_tree_option,
@@ -39,6 +40,7 @@ from ..opt import (
     revision_argument,
     sql_option,
     tree_name_argument,
+    update_namespace_option,
     verbose_option,
     version_argument,
 )
@@ -147,3 +149,14 @@ def rewrite_sqlite_registry(**kwargs: Any) -> None:
     old registry moved to a backup file.
     """
     script.rewrite_sqlite_registry(**kwargs)
+
+
+@migrate.command(
+    short_help="Add namespace attribute to the stored dimensions configuration.", cls=ButlerCommand
+)
+@update_namespace_option
+@repo_argument(required=True)
+@namespace_argument(required=False)
+def set_namespace(**kwargs: Any) -> None:
+    """Add or update namespace attribute to dimensions.json"""
+    script.migrate_set_namespace(**kwargs)

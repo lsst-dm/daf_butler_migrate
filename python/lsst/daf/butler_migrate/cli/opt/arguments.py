@@ -55,3 +55,12 @@ manager_argument = MWArgumentDecorator(
     ),
     required=False,
 )
+
+namespace_argument = MWArgumentDecorator(
+    "namespace",
+    help=(
+        "NAMESPACE to add or replace in the stored dimensions configuration. "
+        "If namespace is not specified then existing namespace is printed."
+    ),
+    required=False,
+)

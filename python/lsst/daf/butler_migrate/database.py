@@ -23,7 +23,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Dict, List, Mapping, Optional, Tuple
+from contextlib import contextmanager
+from typing import Dict, Iterator, List, Mapping, Optional, Tuple
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
@@ -96,6 +97,13 @@ class Database:
     def schema(self) -> Optional[str]:
         """Schema (namespace) name (`str`)"""
         return self._schema
+
+    @contextmanager
+    def connect(self) -> Iterator[sqlalchemy.engine.Connection]:
+        """Context manager for database connection."""
+        engine = sqlalchemy.engine.create_engine(self._db_url)
+        with engine.connect() as connection:
+            yield connection
 
     def dimensions_namespace(self) -> Optional[str]:
         """Return dimensions namespace from a stored configuration.

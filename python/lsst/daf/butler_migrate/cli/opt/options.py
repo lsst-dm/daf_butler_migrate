@@ -64,3 +64,7 @@ namespace_option = click.option(
     help="Namespace to use when 'namespace' key is not present in the stored dimensions configuration",
     default=None,
 )
+
+update_namespace_option = click.option(
+    "--update", help="Replace existing namespace if it exists.", is_flag=True
+)

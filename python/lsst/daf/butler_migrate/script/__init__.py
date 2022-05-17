@@ -24,6 +24,7 @@ from .migrate_current import migrate_current
 from .migrate_downgrade import migrate_downgrade
 from .migrate_history import migrate_history
 from .migrate_revision import migrate_revision
+from .migrate_set_namespace import migrate_set_namespace
 from .migrate_stamp import migrate_stamp
 from .migrate_trees import migrate_trees
 from .migrate_upgrade import migrate_upgrade
