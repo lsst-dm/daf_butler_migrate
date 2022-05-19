@@ -22,7 +22,7 @@
 from __future__ import annotations
 
 import json
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import sqlalchemy
 
@@ -82,6 +82,21 @@ class ButlerAttributes:
         # update version
         sql = self._table.update().where(self._table.columns.name == name).values(value=value)
         return self._connection.execute(sql).rowcount
+
+    def get_dimensions_json(self) -> Dict[str, Any]:
+        """Return dimensions configuration from dimensions.json.
+
+        Returns
+        -------
+        config : `dict`
+            Contents of ``dimensions.json`` as dictionary.
+        """
+        key = "config:dimensions.json"
+        config_json = self.get(key)
+        if config_json is None:
+            raise LookupError(f"Key {key} does not exist in attributes table")
+        config = json.loads(config_json)
+        return config
 
     def update_dimensions_json(self, update_config: Callable[[Dict], Dict]) -> None:
         """Updates dimensions definitions in dimensions.json.
