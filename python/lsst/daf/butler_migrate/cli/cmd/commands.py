@@ -36,6 +36,7 @@ from ..opt import (
     namespace_option,
     one_shot_option,
     one_shot_tree_option,
+    options_option,
     purge_option,
     revision_argument,
     sql_option,
@@ -119,6 +120,7 @@ def show_current(*args: Any, **kwargs: Any) -> None:
 @one_shot_tree_option
 @sql_option
 @namespace_option
+@options_option
 @repo_argument(required=True)
 @revision_argument(required=True)
 def upgrade(*args: Any, **kwargs: Any) -> None:

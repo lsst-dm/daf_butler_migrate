@@ -25,7 +25,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Dict, Optional
 
 from alembic import command
 
@@ -35,7 +35,13 @@ _LOG = logging.getLogger(__name__)
 
 
 def migrate_upgrade(
-    repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool, namespace: Optional[str]
+    repo: str,
+    revision: str,
+    mig_path: str,
+    one_shot_tree: str,
+    sql: bool,
+    namespace: Optional[str],
+    options: Optional[Dict[str, str]],
 ) -> None:
     """Upgrade schema to a specified revision.
 
@@ -77,6 +83,8 @@ def migrate_upgrade(
     one_shot_arg: Optional[str] = None
     if one_shot_tree:
         one_shot_arg = one_shot_tree
-    cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db, one_shot_tree=one_shot_arg)
+    cfg = config.MigAlembicConfig.from_mig_path(
+        mig_path, db=db, one_shot_tree=one_shot_arg, migration_options=options
+    )
 
     command.upgrade(cfg, revision, sql=sql)

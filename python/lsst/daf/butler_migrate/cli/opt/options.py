@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import click
+from lsst.daf.butler.cli.utils import split_kv
 
 from ... import migrate
 
@@ -67,4 +68,12 @@ namespace_option = click.option(
 
 update_namespace_option = click.option(
     "--update", help="Replace existing namespace if it exists.", is_flag=True
+)
+
+options_option = click.option(
+    "--options",
+    callback=split_kv,
+    help="Options to pass to migration scripts, as a key-value pair.",
+    metavar="TEXT=TEXT",
+    multiple=True,
 )
