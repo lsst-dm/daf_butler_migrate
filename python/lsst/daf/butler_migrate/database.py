@@ -253,3 +253,67 @@ class Database:
                 for rev in manager_only:
                     msg += f" {rev}={manager_revs[rev]}"
             raise RevisionConsistencyError(msg)
+
+    def dump_schema(self, tables: Optional[List[str]]) -> None:
+        """Dump the schema of the registry database.
+
+        Parameters
+        ----------
+        repo : `str`
+            Path to butler configuration YAML file or a directory containing a
+            "butler.yaml" file.
+        tables: `list`, optional
+            List of the tables, if missing or empty then schema for all tables
+            is printed.
+        """
+        engine = sqlalchemy.engine.create_engine(self._db_url)
+        inspector = sqlalchemy.inspect(engine)
+        table_names = sorted(inspector.get_table_names(schema=self._schema))
+        for table in table_names:
+
+            if tables and table not in tables:
+                continue
+
+            print(f"table={table}")
+
+            columns = inspector.get_columns(table, schema=self._schema)
+            columns.sort(key=lambda c: c["name"])
+            for col in columns:
+                print(
+                    f"  column={col['name']} type={col['type']} nullable={col['nullable']}"
+                    f" default={col['default']} [table={table}]"
+                )
+
+            pk = inspector.get_pk_constraint(table, schema=self._schema)
+            if pk:
+                columns = ",".join(pk["constrained_columns"])
+                print(f"  PK name={pk['name']} columns=({columns}) [table={table}]")
+
+            uniques = inspector.get_unique_constraints(table, schema=self._schema)
+            uniques.sort(key=lambda uq: uq["name"])
+            for uq in uniques:
+                columns = ",".join(uq["column_names"])
+                print(f"  UNIQUE name={uq['name']} columns=({columns}) [table={table}]")
+
+            fks = inspector.get_foreign_keys(table, schema=self._schema)
+            fks.sort(key=lambda fk: fk["name"])
+            for fk in fks:
+                columns = ",".join(fk["constrained_columns"])
+                ref_columns = ",".join(fk["referred_columns"])
+                print(
+                    f"  FK name={fk['name']} ({columns}) -> {fk['referred_table']}({ref_columns})"
+                    f" [table={table}]"
+                )
+
+            checks = inspector.get_check_constraints(table, schema=self._schema)
+            checks.sort(key=lambda chk: chk["name"])
+            for check in checks:
+                print(f"  CHECK name={check['name']} sqltext={check['sqltext']} [table={table}]")
+
+            indices = inspector.get_indexes(table, schema=self._schema)
+            indices.sort(key=lambda idx: idx["name"])
+            for idx in indices:
+                columns = ",".join(idx["column_names"])
+                print(
+                    f"  INDEX name={idx['name']} columns=({columns}) unique={idx['unique']} [table={table}]"
+                )

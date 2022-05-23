@@ -64,3 +64,11 @@ namespace_argument = MWArgumentDecorator(
     ),
     required=False,
 )
+
+
+tables_argument = MWArgumentDecorator(
+    "table",
+    help="TABLE specify multiple optional table names to dump, by default all tables are dumped.",
+    required=False,
+    nargs=-1,
+)

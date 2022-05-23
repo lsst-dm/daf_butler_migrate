@@ -40,6 +40,7 @@ from ..opt import (
     purge_option,
     revision_argument,
     sql_option,
+    tables_argument,
     tree_name_argument,
     update_namespace_option,
     verbose_option,
@@ -162,3 +163,11 @@ def rewrite_sqlite_registry(**kwargs: Any) -> None:
 def set_namespace(**kwargs: Any) -> None:
     """Add or update namespace attribute to dimensions.json"""
     script.migrate_set_namespace(**kwargs)
+
+
+@migrate.command(short_help="Dump schema of the database tables.", cls=ButlerCommand)
+@repo_argument(required=True)
+@tables_argument(required=False)
+def dump_schema(**kwargs: Any) -> None:
+    """Add or update namespace attribute to dimensions.json"""
+    script.migrate_dump_schema(**kwargs)
