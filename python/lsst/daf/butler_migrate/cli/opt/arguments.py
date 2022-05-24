@@ -46,3 +46,29 @@ revision_argument = MWArgumentDecorator(
         "specify initial revision using INITIAL:TARGET format."
     ),
 )
+
+manager_argument = MWArgumentDecorator(
+    "manager",
+    help=(
+        "MANAGER is a name of the manager for which to stamp the revision, "
+        "if missing then all managers are stamped."
+    ),
+    required=False,
+)
+
+namespace_argument = MWArgumentDecorator(
+    "namespace",
+    help=(
+        "NAMESPACE to add or replace in the stored dimensions configuration. "
+        "If namespace is not specified then existing namespace is printed."
+    ),
+    required=False,
+)
+
+
+tables_argument = MWArgumentDecorator(
+    "table",
+    help="TABLE specify multiple optional table names to dump, by default all tables are dumped.",
+    required=False,
+    nargs=-1,
+)

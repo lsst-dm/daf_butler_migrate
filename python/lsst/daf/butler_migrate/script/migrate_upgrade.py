@@ -25,7 +25,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Dict, Optional
 
 from alembic import command
 
@@ -34,7 +34,15 @@ from .. import config, database
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool) -> None:
+def migrate_upgrade(
+    repo: str,
+    revision: str,
+    mig_path: str,
+    one_shot_tree: str,
+    sql: bool,
+    namespace: Optional[str],
+    options: Optional[Dict[str, str]],
+) -> None:
     """Upgrade schema to a specified revision.
 
     Parameters
@@ -50,8 +58,17 @@ def migrate_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str,
         Name of special one-shot tree, if empty use regular history.
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
+    namespace: `str`, optional
+        Dimensions namespace to use when "namespace" key is not present in
+        ``config:dimensions.json``.
     """
     db = database.Database.from_repo(repo)
+
+    if namespace is None and db.dimensions_namespace() is None:
+        raise ValueError(
+            "The `--namespace` option is required when namespace is missing from"
+            " stored dimensions configuration"
+        )
 
     # Check that alembic versions exist in database, we do not support
     # migrations from empty state.
@@ -61,11 +78,13 @@ def migrate_upgrade(repo: str, revision: str, mig_path: str, one_shot_tree: str,
         )
 
     # check that alembic versions are consistent with butler
-    db.validate_revisions()
+    db.validate_revisions(namespace)
 
     one_shot_arg: Optional[str] = None
     if one_shot_tree:
         one_shot_arg = one_shot_tree
-    cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db, one_shot_tree=one_shot_arg)
+    cfg = config.MigAlembicConfig.from_mig_path(
+        mig_path, db=db, one_shot_tree=one_shot_arg, migration_options=options
+    )
 
     command.upgrade(cfg, revision, sql=sql)

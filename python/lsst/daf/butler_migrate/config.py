@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from alembic.config import Config
 
@@ -45,6 +45,7 @@ class MigAlembicConfig(Config):
         db: Optional[database.Database] = None,
         single_tree: Optional[str] = None,
         one_shot_tree: Optional[str] = None,
+        migration_options: Optional[Dict[str, str]] = None,
         **kwargs: Any,
     ) -> MigAlembicConfig:
         """Create new configuration object.
@@ -63,6 +64,9 @@ class MigAlembicConfig(Config):
             If this is given (and ``single_tree`` is not) then this tree will
             replace regular version tree for corresponding manager. Tree name
             must contain slash character separating manager name and tree name.
+        migration_options : `dict`, optional
+            Additional options that can be passed to migration script via the
+            configuration object, in a section "daf_butler_migrate_options".
         """
         alembic_folder = os.path.join(mig_path, "_alembic")
         ini_path = os.path.join(alembic_folder, "alembic.ini")
@@ -94,11 +98,16 @@ class MigAlembicConfig(Config):
         # we do not use this option, this is just to make sure that
         # [daf_butler_migrate] section exists
         cfg.set_section_option("daf_butler_migrate", "_daf_butler_migrate", "")
+        cfg.set_section_option("daf_butler_migrate_options", "_daf_butler_migrate_options", "")
 
         if db is not None:
             cfg.set_main_option("sqlalchemy.url", db.db_url)
             if db.schema:
                 cfg.set_section_option("daf_butler_migrate", "schema", db.schema)
+
+        if migration_options:
+            for key, value in migration_options.items():
+                cfg.set_section_option("daf_butler_migrate_options", key, value)
 
         return cfg
 

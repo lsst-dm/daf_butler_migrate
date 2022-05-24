@@ -29,14 +29,20 @@ from ... import script
 from ..opt import (
     class_argument,
     dry_run_option,
+    manager_argument,
     mig_path_exist_option,
     mig_path_option,
+    namespace_argument,
+    namespace_option,
     one_shot_option,
     one_shot_tree_option,
+    options_option,
     purge_option,
     revision_argument,
     sql_option,
+    tables_argument,
     tree_name_argument,
+    update_namespace_option,
     verbose_option,
     version_argument,
 )
@@ -90,8 +96,10 @@ def show_trees(*args: Any, **kwargs: Any) -> None:
 @migrate.command(short_help="Stamp revision table with current registry versions.", cls=ButlerCommand)
 @mig_path_exist_option
 @purge_option
+@namespace_option
 @dry_run_option
 @repo_argument(required=True)
+@manager_argument()
 def stamp(*args: Any, **kwargs: Any) -> None:
     """Stamp revision table with current registry versions."""
     script.migrate_stamp(*args, **kwargs)
@@ -100,6 +108,7 @@ def stamp(*args: Any, **kwargs: Any) -> None:
 @migrate.command(short_help="Display current revisions for a database.", cls=ButlerCommand)
 @verbose_option
 @click.option("--butler", help="Display butler version numbers for managers.", is_flag=True)
+@namespace_option
 @mig_path_exist_option
 @repo_argument(required=True)
 def show_current(*args: Any, **kwargs: Any) -> None:
@@ -111,6 +120,8 @@ def show_current(*args: Any, **kwargs: Any) -> None:
 @mig_path_exist_option
 @one_shot_tree_option
 @sql_option
+@namespace_option
+@options_option
 @repo_argument(required=True)
 @revision_argument(required=True)
 def upgrade(*args: Any, **kwargs: Any) -> None:
@@ -122,6 +133,7 @@ def upgrade(*args: Any, **kwargs: Any) -> None:
 @mig_path_exist_option
 @one_shot_tree_option
 @sql_option
+@namespace_option
 @repo_argument(required=True)
 @revision_argument(required=True)
 def downgrade(*args: Any, **kwargs: Any) -> None:
@@ -131,7 +143,7 @@ def downgrade(*args: Any, **kwargs: Any) -> None:
 
 @migrate.command(short_help="Upgrade a SQLite registry by rewriting it from scratch.", cls=ButlerCommand)
 @click.argument("source", required=True)
-def rewrite_sqlite_registry(**kwargs):
+def rewrite_sqlite_registry(**kwargs: Any) -> None:
     """Transfer registry information from one registry to a new registry.
 
     SOURCE is a URI to the Butler repository to be transferred.
@@ -140,3 +152,22 @@ def rewrite_sqlite_registry(**kwargs):
     old registry moved to a backup file.
     """
     script.rewrite_sqlite_registry(**kwargs)
+
+
+@migrate.command(
+    short_help="Add namespace attribute to the stored dimensions configuration.", cls=ButlerCommand
+)
+@update_namespace_option
+@repo_argument(required=True)
+@namespace_argument(required=False)
+def set_namespace(**kwargs: Any) -> None:
+    """Add or update namespace attribute to dimensions.json"""
+    script.migrate_set_namespace(**kwargs)
+
+
+@migrate.command(short_help="Dump schema of the database tables.", cls=ButlerCommand)
+@repo_argument(required=True)
+@tables_argument(required=False)
+def dump_schema(**kwargs: Any) -> None:
+    """Add or update namespace attribute to dimensions.json"""
+    script.migrate_dump_schema(**kwargs)

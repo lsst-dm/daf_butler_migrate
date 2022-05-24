@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 from alembic import command
 
@@ -33,7 +34,7 @@ from .. import config, database
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> None:
+def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, namespace: Optional[str]) -> None:
     """Display current revisions for a database.
 
     Parameters
@@ -48,12 +49,21 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> No
     butler: `bool`
         If True then print versions numbers from butler, otherwise display
         information about alembic revisions.
+    namespace: `str`, optional
+        Dimensions namespace to use when "namespace" key is not present in
+        ``config:dimensions.json``.
     """
     db = database.Database.from_repo(repo)
 
+    if namespace is None and db.dimensions_namespace() is None:
+        raise ValueError(
+            "The `--namespace` option is required when namespace is missing from"
+            " stored dimensions configuration"
+        )
+
     if butler:
         # Print current versions defined in butler.
-        manager_versions = db.manager_versions()
+        manager_versions = db.manager_versions(namespace)
         if manager_versions:
             for manager, (klass, version, rev_id) in sorted(manager_versions.items()):
                 print(f"{manager}: {klass} {version} -> {rev_id}")
@@ -67,4 +77,4 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool) -> No
     # complain if alembic_version table is there but does not match manager
     # versions
     if db.alembic_revisions():
-        db.validate_revisions()
+        db.validate_revisions(namespace)

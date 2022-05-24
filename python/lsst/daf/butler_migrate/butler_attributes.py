@@ -21,7 +21,8 @@
 
 from __future__ import annotations
 
-from typing import Optional
+import json
+from typing import Any, Callable, Dict, Optional
 
 import sqlalchemy
 
@@ -44,6 +45,24 @@ class ButlerAttributes:
             "butler_attributes", metadata, autoload_with=connection, schema=schema
         )
 
+    def get(self, name: str) -> Optional[str]:
+        """Retrieve values of the named attribute.
+
+        Parameters
+        ----------
+        name : `str`
+            Attribute name.
+
+        Returns
+        -------
+        value : `str` or `None`
+            Attribute value, `None` is returned if attribute does not exist.
+        """
+        sql = sqlalchemy.select(self._table.columns["value"]).where(self._table.columns["name"] == name)
+        result = self._connection.execute(sql)
+        row = result.fetchone()
+        return row[0] if row is not None else None
+
     def update(self, name: str, value: str) -> int:
         """Update the value of existing parameter in butler_attributes table.
 
@@ -63,3 +82,39 @@ class ButlerAttributes:
         # update version
         sql = self._table.update().where(self._table.columns.name == name).values(value=value)
         return self._connection.execute(sql).rowcount
+
+    def get_dimensions_json(self) -> Dict[str, Any]:
+        """Return dimensions configuration from dimensions.json.
+
+        Returns
+        -------
+        config : `dict`
+            Contents of ``dimensions.json`` as dictionary.
+        """
+        key = "config:dimensions.json"
+        config_json = self.get(key)
+        if config_json is None:
+            raise LookupError(f"Key {key} does not exist in attributes table")
+        config = json.loads(config_json)
+        return config
+
+    def update_dimensions_json(self, update_config: Callable[[Dict], Dict]) -> None:
+        """Updates dimensions definitions in dimensions.json.
+
+        Parameters
+        ----------
+        update_config : `Callable`
+            A method that takes a dictionary representation of the
+            ``dimensions.json`` and returns an updated dictionary.
+        """
+        key = "config:dimensions.json"
+        config_json = self.get(key)
+        if config_json is None:
+            raise LookupError(f"Key {key} does not exist in attributes table")
+        config = json.loads(config_json)
+
+        # modify config
+        config = update_config(config)
+
+        config_json = json.dumps(config)
+        self.update(key, config_json)

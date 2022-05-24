@@ -21,8 +21,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Dict, List, Mapping, Optional, Tuple
+from contextlib import contextmanager
+from typing import Dict, Iterator, List, Mapping, Optional, Tuple
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
@@ -50,6 +52,12 @@ class Database:
     schema : `str`, optional
         Database schema/namespace.
     """
+
+    dimensions_json_key = "config:dimensions.json"
+    """Key for dimensions configuration in butler_attributes table (`str`)"""
+
+    dimensions_config_manager = "dimensions-config"
+    """Name of the special dimensions-config pseudo-manager (`str`)"""
 
     def __init__(self, db_url: str, schema: Optional[str] = None):
         self._db_url = db_url
@@ -90,8 +98,48 @@ class Database:
         """Schema (namespace) name (`str`)"""
         return self._schema
 
-    def manager_versions(self) -> Mapping[str, Tuple[str, str, str]]:
+    @contextmanager
+    def connect(self) -> Iterator[sqlalchemy.engine.Connection]:
+        """Context manager for database connection."""
+        engine = sqlalchemy.engine.create_engine(self._db_url)
+        with engine.connect() as connection:
+            yield connection
+
+    def dimensions_namespace(self) -> Optional[str]:
+        """Return dimensions namespace from a stored configuration.
+
+        Returns
+        -------
+        namespace: `str` or `None`
+            Dimensions namespace or `None` if not defined.
+        """
+        engine = sqlalchemy.engine.create_engine(self._db_url)
+
+        meta = sqlalchemy.schema.MetaData(schema=self._schema)
+        table = sqlalchemy.schema.Table(
+            "butler_attributes",
+            meta,
+            sqlalchemy.schema.Column("name", sqlalchemy.Text),
+            sqlalchemy.schema.Column("value", sqlalchemy.Text),
+        )
+
+        sql = sqlalchemy.sql.select(table.columns.value).where(table.columns.name == self.dimensions_json_key)
+        with engine.connect() as connection:
+            result = connection.execute(sql)
+            row = result.fetchone()
+            if row is None:
+                return None
+            dimensions_json = json.loads(row[0])
+            return dimensions_json.get("namespace")
+
+    def manager_versions(self, namespace: Optional[str] = None) -> Mapping[str, Tuple[str, str, str]]:
         """Retrieve current manager versions stored in butler_attributes table.
+
+        Parameters
+        ----------
+        namespace: `str`, optional
+            Dimensions namespace to use when "namespace" key is not present in
+            ``config:dimensions.json``.
 
         Returns
         -------
@@ -121,6 +169,15 @@ class Database:
                     managers[name.rpartition(".")[-1]] = value
                 elif name.startswith("version:"):
                     versions[name.partition(":")[-1]] = value
+                elif name == self.dimensions_json_key:
+                    dimensions_json = json.loads(value)
+                    namespace = dimensions_json.get("namespace", namespace)
+                    # If namespace is missing and not provided with parameters
+                    # then don't include pseudo-manager (but CLI will force
+                    # parameter use if stored one is missing).
+                    if namespace is not None:
+                        managers[self.dimensions_config_manager] = namespace
+                        versions[namespace] = str(dimensions_json["version"])
 
         # combine them into one structure
         revisions: Dict[str, Tuple[str, str, str]] = {}
@@ -149,8 +206,14 @@ class Database:
             )
             return list(ctx.get_current_heads())
 
-    def validate_revisions(self) -> None:
+    def validate_revisions(self, namespace: Optional[str] = None) -> None:
         """Verify that consistency of alembic revisions and butler versions.
+
+        Parameters
+        ----------
+        namespace: `str`, optional
+            Dimensions namespace to use when "namespace" key is not present in
+            ``config:dimensions.json``.
 
         Raises
         ------
@@ -160,7 +223,7 @@ class Database:
         """
         # TODO: possible optimization to reuse a connection to database
         try:
-            manager_versions = self.manager_versions()
+            manager_versions = self.manager_versions(namespace)
         except sqlalchemy.exc.OperationalError:
             raise RevisionConsistencyError("butler_attributes table does not exist")
         alembic_revisions = self.alembic_revisions()
@@ -190,3 +253,67 @@ class Database:
                 for rev in manager_only:
                     msg += f" {rev}={manager_revs[rev]}"
             raise RevisionConsistencyError(msg)
+
+    def dump_schema(self, tables: Optional[List[str]]) -> None:
+        """Dump the schema of the registry database.
+
+        Parameters
+        ----------
+        repo : `str`
+            Path to butler configuration YAML file or a directory containing a
+            "butler.yaml" file.
+        tables: `list`, optional
+            List of the tables, if missing or empty then schema for all tables
+            is printed.
+        """
+        engine = sqlalchemy.engine.create_engine(self._db_url)
+        inspector = sqlalchemy.inspect(engine)
+        table_names = sorted(inspector.get_table_names(schema=self._schema))
+        for table in table_names:
+
+            if tables and table not in tables:
+                continue
+
+            print(f"table={table}")
+
+            columns = inspector.get_columns(table, schema=self._schema)
+            columns.sort(key=lambda c: c["name"])
+            for col in columns:
+                print(
+                    f"  column={col['name']} type={col['type']} nullable={col['nullable']}"
+                    f" default={col['default']} [table={table}]"
+                )
+
+            pk = inspector.get_pk_constraint(table, schema=self._schema)
+            if pk:
+                columns = ",".join(pk["constrained_columns"])
+                print(f"  PK name={pk['name']} columns=({columns}) [table={table}]")
+
+            uniques = inspector.get_unique_constraints(table, schema=self._schema)
+            uniques.sort(key=lambda uq: uq["name"])
+            for uq in uniques:
+                columns = ",".join(uq["column_names"])
+                print(f"  UNIQUE name={uq['name']} columns=({columns}) [table={table}]")
+
+            fks = inspector.get_foreign_keys(table, schema=self._schema)
+            fks.sort(key=lambda fk: fk["name"])
+            for fk in fks:
+                columns = ",".join(fk["constrained_columns"])
+                ref_columns = ",".join(fk["referred_columns"])
+                print(
+                    f"  FK name={fk['name']} ({columns}) -> {fk['referred_table']}({ref_columns})"
+                    f" [table={table}]"
+                )
+
+            checks = inspector.get_check_constraints(table, schema=self._schema)
+            checks.sort(key=lambda chk: chk["name"])
+            for check in checks:
+                print(f"  CHECK name={check['name']} sqltext={check['sqltext']} [table={table}]")
+
+            indices = inspector.get_indexes(table, schema=self._schema)
+            indices.sort(key=lambda idx: idx["name"])
+            for idx in indices:
+                columns = ",".join(idx["column_names"])
+                print(
+                    f"  INDEX name={idx['name']} columns=({columns}) unique={idx['unique']} [table={table}]"
+                )

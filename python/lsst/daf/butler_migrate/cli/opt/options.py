@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import click
+from lsst.daf.butler.cli.utils import split_kv
 
 from ... import migrate
 
@@ -57,4 +58,22 @@ purge_option = click.option(
 
 sql_option = click.option(
     "--sql", help="Offline mode, dump SQL instead of executing migration on a database.", is_flag=True
+)
+
+namespace_option = click.option(
+    "--namespace",
+    help="Namespace to use when 'namespace' key is not present in the stored dimensions configuration",
+    default=None,
+)
+
+update_namespace_option = click.option(
+    "--update", help="Replace existing namespace if it exists.", is_flag=True
+)
+
+options_option = click.option(
+    "--options",
+    callback=split_kv,
+    help="Options to pass to migration scripts, as a key-value pair.",
+    metavar="TEXT=TEXT",
+    multiple=True,
 )

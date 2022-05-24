@@ -1,8 +1,8 @@
-# This file is part of obs_base.
+# This file is part of daf_butler_migrate.
 #
 # Developed for the LSST Data Management System.
 # This product includes software developed by the LSST Project
-# (https://www.lsst.org).
+# (http://www.lsst.org).
 # See the COPYRIGHT file at the top-level directory of this distribution
 # for details of code ownership.
 #
@@ -17,16 +17,28 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .migrate_add_tree import migrate_add_tree
-from .migrate_current import migrate_current
-from .migrate_downgrade import migrate_downgrade
-from .migrate_dump_schema import migrate_dump_schema
-from .migrate_history import migrate_history
-from .migrate_revision import migrate_revision
-from .migrate_set_namespace import migrate_set_namespace
-from .migrate_stamp import migrate_stamp
-from .migrate_trees import migrate_trees
-from .migrate_upgrade import migrate_upgrade
-from .rewrite_sqlite_registry import rewrite_sqlite_registry
+from __future__ import annotations
+
+import logging
+from typing import List
+
+from .. import database
+
+_LOG = logging.getLogger(__name__)
+
+
+def migrate_dump_schema(repo: str, table: List[str]) -> None:
+    """Dump the schema of the registry database.
+
+    Parameters
+    ----------
+    repo : `str`
+        Path to butler configuration YAML file or a directory containing a
+        "butler.yaml" file.
+    tables: `list`
+        List of the tables, if empty then schema for all tables is printed.
+    """
+    db = database.Database.from_repo(repo)
+    db.dump_schema(table)
