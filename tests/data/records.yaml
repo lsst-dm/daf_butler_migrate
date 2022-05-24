@@ -1,0 +1,101 @@
+description: Butler Data Repository Export
+version: 0
+data:
+  -
+    type: dimension
+    element: instrument
+    records:
+      -
+        name: Cam
+        visit_max: 1024
+        exposure_max: 512
+        detector_max: 4
+        class_name: lsst.obs.base.Instrument
+  -
+    type: dimension
+    element: physical_filter
+    records:
+      -
+        instrument: Cam
+        name: g
+        band: g
+      -
+        instrument: Cam
+        name: r
+        band: r
+  -
+    type: dimension
+    element: visit_system
+    records:
+      -
+        instrument: Cam
+        id: 0
+        name: visit-system-0
+  -
+    type: dimension
+    element: exposure
+    records:
+      -
+        instrument: Cam
+        id: 1000
+        physical_filter: g
+        seq_num: 100
+        obs_id: "exp:1000"
+      -
+        instrument: Cam
+        id: 1001
+        physical_filter: g
+        seq_num: 101
+        obs_id: "exp:1001"
+      -
+        instrument: Cam
+        id: 2000
+        physical_filter: r
+        seq_num: 200
+        obs_id: "exp:2000"
+      -
+        instrument: Cam
+        id: 2001
+        physical_filter: r
+        seq_num: 201
+        obs_id: "exp:2001"
+  -
+    type: dimension
+    element: visit
+    records:
+      -
+        instrument: Cam
+        id: 1
+        physical_filter: g
+        name: "visit-1"
+        visit_system: 0
+      -
+        instrument: Cam
+        id: 2
+        physical_filter: r
+        name: "visit-2"
+        visit_system: 0
+  -
+    type: dimension
+    element: visit_definition
+    records:
+      -
+        instrument: Cam
+        visit_system: 0
+        exposure: 1000
+        visit: 1
+      -
+        instrument: Cam
+        visit_system: 0
+        exposure: 1001
+        visit: 1
+      -
+        instrument: Cam
+        visit_system: 0
+        exposure: 2000
+        visit: 2
+      -
+        instrument: Cam
+        visit_system: 0
+        exposure: 2001
+        visit: 2
