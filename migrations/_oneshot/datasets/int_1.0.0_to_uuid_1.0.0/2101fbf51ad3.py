@@ -286,6 +286,8 @@ def _gen_refs(metadata: sa.schema.MetaData) -> Iterator[Tuple[str, str, int, Dic
     run = _get_table(metadata, "run")
     collection = _get_table(metadata, "collection")
 
+    dataset_ids = set()
+
     tag_tables = [table for table in metadata.tables.values() if table.name.startswith("dataset_tags_")]
     for table in tag_tables:
 
@@ -331,7 +333,29 @@ def _gen_refs(metadata: sa.schema.MetaData) -> Iterator[Tuple[str, str, int, Dic
             dstype_name = row[col_dataset_type_name]
             dataset_id = row[col_dataset_id]
             dataId = dict((col.name, row[col]) for col in dim_cols)
+            dataset_ids.add(dataset_id)
 
+            yield run_name, dstype_name, dataset_id, dataId
+
+    # Also look at removed datasets that are only known to datastore.
+    removed_ids = set()
+    for table_name in ("file_datastore_records", "dataset_location_trash"):
+        table = _get_table(metadata, table_name)
+        col_dataset_id = table.columns["dataset_id"]
+        sql = sa.select(col_dataset_id).select_from(table)
+        _LOG.debug("sql: %s", sql)
+        result = metadata.bind.execute(sql)
+        for row in result:
+            dataset_id = row[col_dataset_id]
+            if dataset_id not in dataset_ids:
+                removed_ids.add(dataset_id)
+    if removed_ids:
+        _LOG.debug("found %s removed datasets", len(removed_ids))
+        # Run name and dataset type name can be anything that is non-raw.
+        run_name = ""
+        dstype_name = ""
+        dataId = {}
+        for dataset_id in removed_ids:
             yield run_name, dstype_name, dataset_id, dataId
 
 
@@ -399,13 +423,13 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
         sql = table.update().values(
             id_uuid=sa.select([map_table.columns.uuid]).where(
                 map_table.columns.id == table.columns.id
-            )
+            ).scalar_subquery()
         )
     else:
         sql = table.update().values(
             dataset_id_uuid=sa.select([map_table.columns.uuid]).where(
                 map_table.columns.id == table.columns.dataset_id
-            )
+            ).scalar_subquery()
         )
     op.get_bind().execute(sql)
     _LOG.debug("Filled uuids in table %r", table.name)
