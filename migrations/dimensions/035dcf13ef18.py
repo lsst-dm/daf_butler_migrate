@@ -35,6 +35,7 @@ def upgrade() -> None:
     6.0.1 is still validating checksums so we keep checksum from 6.0.1 in the
     database.
     """
+    _check_visit_null_filter()
     _do_migration(nullable=False, manager_version="6.0.2")
 
 
@@ -85,3 +86,37 @@ def _do_migration(nullable: bool, manager_version: str) -> None:
 
     count = attributes.update(f"version:{MANAGER}", manager_version)
     assert count == 1, "expected to update single row"
+
+
+def _check_visit_null_filter():
+    """In some cases we saw that visit.physical_filter column contains NULLs,
+    and we need to replace that with some non-NULL values.
+    """
+    mig_context = context.get_context()
+    bind = mig_context.bind
+    schema = mig_context.version_table_schema
+    metadata = sa.schema.MetaData(bind, schema=schema)
+
+    visit = sa.schema.Table("visit", metadata, autoload_with=bind, schema=schema)
+    sql = (
+        sa.select(sa.func.count())
+        .select_from(visit)
+        .where(visit.columns["physical_filter"] == None)  # noqa: E711
+    )
+    num_nulls = bind.execute(sql).scalar()
+    if num_nulls > 0:
+
+        # User needs to pass special argument.
+        config = context.config
+        null_filter_value = config.get_section_option("daf_butler_migrate_options", "null_filter_value")
+        if null_filter_value is None:
+            raise ValueError(
+                "NULL values were found for visit.physical_filter. They need to be replaced with"
+                " non-NULL values. Please use `--options null_filter_value=<value>` command line option."
+            )
+        else:
+            op.execute(
+                visit.update()
+                .where(visit.columns["physical_filter"] == None)  # noqa: E711
+                .values(physical_filter=null_filter_value)
+            )
