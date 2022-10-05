@@ -21,6 +21,7 @@
 
 import contextlib
 import unittest
+from collections.abc import Iterator
 
 import sqlalchemy
 from lsst.daf.butler_migrate import database, revision
@@ -59,8 +60,12 @@ _broken_alembic_version = [
 
 @contextlib.contextmanager
 def make_revision_tables(
-    make_butler=True, fill_butler=True, make_alembic=True, fill_alembic=True, broken_alembic=False
-):
+    make_butler: bool = True,
+    fill_butler: bool = True,
+    make_alembic: bool = True,
+    fill_alembic: bool = True,
+    broken_alembic: bool = False,
+) -> Iterator[str]:
     """Create simple sqlite database with butler_attributes populated.
 
     Yields
@@ -94,7 +99,7 @@ def make_revision_tables(
 class DatabaseTestCase(unittest.TestCase):
     """Tests for database module"""
 
-    def test_manager_versions(self):
+    def test_manager_versions(self) -> None:
         """Test for manager_versions() method"""
 
         with make_revision_tables() as db_url:
@@ -112,7 +117,7 @@ class DatabaseTestCase(unittest.TestCase):
                 },
             )
 
-    def test_alembic_revisions(self):
+    def test_alembic_revisions(self) -> None:
         """Test for alembic_revisions() method"""
 
         with make_revision_tables() as db_url:
@@ -126,7 +131,7 @@ class DatabaseTestCase(unittest.TestCase):
                 ],
             )
 
-    def test_validate_revisions(self):
+    def test_validate_revisions(self) -> None:
         """Test for validate_revisions() method"""
 
         with make_revision_tables() as db_url:

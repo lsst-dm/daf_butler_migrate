@@ -22,6 +22,7 @@
 import contextlib
 import os
 import unittest
+from collections.abc import Iterator
 
 from lsst.daf.butler_migrate import migrate
 from lsst.utils.tests import temporaryDirectory
@@ -43,7 +44,7 @@ _folders = (
 
 
 @contextlib.contextmanager
-def make_migrations():
+def make_migrations() -> Iterator[str]:
     """Generate folder structure for migrations.
 
     Yields
@@ -60,7 +61,7 @@ def make_migrations():
 class MigrateTestCase(unittest.TestCase):
     """Tests for migrate module"""
 
-    def test_MigrationTrees(self):
+    def test_MigrationTrees(self) -> None:
         """Test for MigrationTrees methods"""
 
         with make_migrations() as mig_path:
@@ -124,15 +125,17 @@ class MigrateTestCase(unittest.TestCase):
                 },
             )
 
-            locations = mtrees.version_locations()
-            self.assertCountEqual(locations, ["collections", "datasets", "dimensions"])
+            locations_list = mtrees.version_locations()
+            self.assertCountEqual(locations_list, ["collections", "datasets", "dimensions"])
 
-            locations = mtrees.version_locations("datasets/migration1")
-            self.assertCountEqual(locations, ["collections", "_oneshot/datasets/migration1", "dimensions"])
-
-            locations = mtrees.version_locations("dimensions/mig2", relative=False)
+            locations_list = mtrees.version_locations("datasets/migration1")
             self.assertCountEqual(
-                locations,
+                locations_list, ["collections", "_oneshot/datasets/migration1", "dimensions"]
+            )
+
+            locations_list = mtrees.version_locations("dimensions/mig2", relative=False)
+            self.assertCountEqual(
+                locations_list,
                 [
                     os.path.join(mig_path, "collections"),
                     os.path.join(mig_path, "datasets"),

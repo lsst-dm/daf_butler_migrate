@@ -40,11 +40,11 @@ _REVISION_V2 = "bf6308af80aa"
 class DimensionsJsonTestCase(unittest.TestCase):
     """Tests for migrating of dimensions.json stored configuration."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.root = makeTestTempDir(TESTDIR)
         self.mig_path = migrate.MigrationTrees.migrations_folder()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         removeTestTempDir(self.root)
 
     def make_butler_v0(self) -> Config:
@@ -63,14 +63,14 @@ class DimensionsJsonTestCase(unittest.TestCase):
         self.db = database.Database.from_repo(self.root)
         return config
 
-    def load_data(self, registry: Registry, filename: str):
+    def load_data(self, registry: Registry, filename: str) -> None:
         """Load registry test data from filename in data folder."""
         with open(os.path.join(TESTDIR, "data", filename), "r") as stream:
             backend = YamlRepoImportBackend(stream, registry)
         backend.register()
         backend.load(datastore=None)
 
-    def test_upgrade_v1(self):
+    def test_upgrade_v1(self) -> None:
         """Test for upgrade/downgrade between v0 and v1.
 
         No actual schema change in this migration, only check that contents of
@@ -109,7 +109,7 @@ class DimensionsJsonTestCase(unittest.TestCase):
         versions = self.db.manager_versions(_NAMESPACE)
         self.assertEqual(versions["dimensions-config"], (_NAMESPACE, "0", _REVISION_V0))
 
-    def test_upgrade_v2(self):
+    def test_upgrade_v2(self) -> None:
         """Test for upgrade from v0 to v2.
 
         Loads some dimension records and verifies that data is migrated
