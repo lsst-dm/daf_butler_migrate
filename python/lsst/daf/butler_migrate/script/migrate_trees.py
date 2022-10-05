@@ -54,6 +54,7 @@ def migrate_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
     bases_map: Dict[str, Script] = {}
     for name in bases:
         revision = scripts.get_revision(name)
+        assert revision is not None, "Script for a known base must exist"
         # Base revision has a random ID but its branch label is "<tree>"
         branches = revision.branch_labels
         if not branches:
@@ -93,6 +94,7 @@ def _migrate_trees_one_shot(mig_path: str, verbose: bool) -> None:
             if bases:
                 assert len(bases) == 1
                 revision = scripts.get_revision(bases[0])
+                assert revision is not None, "Script for a known base must exist"
                 print(revision.log_entry)
         else:
             print(entry)
