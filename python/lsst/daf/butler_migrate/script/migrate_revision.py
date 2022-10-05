@@ -131,7 +131,9 @@ def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str
     assert len(bases) == 1
 
     # Base revision has a random ID but its branch label is "<tree>"
-    branches = scripts.get_revision(bases[0]).branch_labels
+    revision_script = scripts.get_revision(bases[0])
+    assert revision_script is not None, "Script for a known base must exist"
+    branches = revision_script.branch_labels
     assert len(branches) == 1
     manager = branches.pop()
 

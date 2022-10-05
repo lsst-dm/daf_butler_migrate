@@ -28,7 +28,7 @@ from lsst.daf.butler_migrate import digests
 class DigestsTestCase(unittest.TestCase):
     """Tests for digests module"""
 
-    def test_tableSchemaRepr(self):
+    def test_tableSchemaRepr(self) -> None:
         """Test for _tableSchemaRepr method"""
 
         engine = sqlalchemy.create_engine("sqlite://")
@@ -54,7 +54,7 @@ class DigestsTestCase(unittest.TestCase):
             table_repr, "Table2;COL,ColumnX,INTEGER,PK;COL,ColumnY,INTEGER,NULL;FK,Table2_FK,ColumnA"
         )
 
-    def test_tableSchemaRepr_nullpk(self):
+    def test_tableSchemaRepr_nullpk(self) -> None:
         """Test for _tableSchemaRepr method in case when PK is declared
         nullable.
         """

@@ -28,8 +28,7 @@ from typing import Dict, Iterator, List, Mapping, Optional, Tuple
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
-from lsst.daf.butler import ButlerConfig
-from lsst.daf.butler.core.repoRelocation import replaceRoot
+from lsst.daf.butler import ButlerConfig, RegistryConfig
 
 from . import revision
 
@@ -59,7 +58,7 @@ class Database:
     dimensions_config_manager = "dimensions-config"
     """Name of the special dimensions-config pseudo-manager (`str`)"""
 
-    def __init__(self, db_url: str, schema: Optional[str] = None):
+    def __init__(self, db_url: sqlalchemy.engine.url.URL, schema: Optional[str] = None):
         self._db_url = db_url
         self._schema = schema
 
@@ -74,11 +73,10 @@ class Database:
             "butler.yaml" file.
         """
         butlerConfig = ButlerConfig(repo)
-        if "root" in butlerConfig:
-            butlerRoot = butlerConfig["root"]
-        else:
-            butlerRoot = butlerConfig.configDir
-        db_url = replaceRoot(butlerConfig["registry", "db"], butlerRoot)
+        registryConfig = RegistryConfig(butlerConfig)
+        butlerRoot = butlerConfig.get("root", butlerConfig.configDir)
+        registryConfig.replaceRoot(butlerRoot)
+        db_url = registryConfig.connectionString
         schema: Optional[str] = None
         try:
             schema = butlerConfig["registry", "namespace"]
@@ -91,7 +89,7 @@ class Database:
     @property
     def db_url(self) -> str:
         """URL for registry database (`str`)"""
-        return self._db_url
+        return str(self._db_url)
 
     @property
     def schema(self) -> Optional[str]:

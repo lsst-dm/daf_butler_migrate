@@ -28,7 +28,7 @@ from lsst.daf.butler_migrate import revision
 class RevisionTestCase(unittest.TestCase):
     """Tests for revision module"""
 
-    def test_rev_id(self):
+    def test_rev_id(self) -> None:
         """Test for rev_id method"""
         args = ["ManagerClass", "1.0.0"]
         rev_id = revision.rev_id(*args)

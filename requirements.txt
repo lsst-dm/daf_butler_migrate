@@ -1,5 +1,5 @@
 click >7.0
-sqlalchemy >= 1.3
+sqlalchemy >= 1.4
 alembic
 lsst-daf-butler
 lsst-utils
