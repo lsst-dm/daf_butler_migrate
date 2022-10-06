@@ -7,36 +7,5 @@ on:
   pull_request:
 
 jobs:
-  mypy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.10.6"
-          cache: "pip"
-
-      - name: Install
-        run: pip install mypy pydantic
-
-      - name: Install types dependencies
-        run: |
-          if [ -e types.txt ]
-          then
-            pip install -r types.txt
-          fi
-      - name: Install lsst dependencies
-        run: |
-          if [ -e requirements.txt ]
-          then
-             pip install -r requirements.txt
-          fi
-      - name: Run mypy
-        run: |
-          prefix="python/lsst"
-          echo "__all__ = ['__version__']" > "${prefix}/daf/butler_migrate/version.py"
-          echo "__version__ = '0.0.1'" >> "${prefix}/daf/butler_migrate/version.py"
-          mypy "${prefix}"
+  call-workflow:
+    uses: lsst/rubin_workflows/.github/workflows/mypy.yaml@tickets/DM-36479
