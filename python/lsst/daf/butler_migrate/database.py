@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import logging
 from contextlib import contextmanager
-from typing import Dict, Iterator, List, Mapping, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Tuple
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
@@ -204,14 +204,22 @@ class Database:
             )
             return list(ctx.get_current_heads())
 
-    def validate_revisions(self, namespace: Optional[str] = None) -> None:
-        """Verify that consistency of alembic revisions and butler versions.
+    def validate_revisions(
+        self, namespace: Optional[str] = None, base_revisions: Iterable[str] | None = None
+    ) -> None:
+        """Verify consistency of alembic revisions and butler versions.
+
+        Revisions in alembic table must match either a version of a manager in
+        butler_attributes or base revision (for manager that did not make yet
+        into butler_attributes).
 
         Parameters
         ----------
         namespace: `str`, optional
             Dimensions namespace to use when "namespace" key is not present in
             ``config:dimensions.json``.
+        base_revisions : `iterable` [`str`], optional
+            Optional base revisions of the migration trees.
 
         Raises
         ------
@@ -237,10 +245,13 @@ class Database:
             manager_revs[rev_id] = (manager, klass, version)
         manager_revs_set = set(manager_revs.keys())
 
-        if alembic_revs != manager_revs_set:
+        alembic_only = alembic_revs - manager_revs_set
+        if base_revisions:
+            alembic_only = alembic_only - set(base_revisions)
+        manager_only = manager_revs_set - alembic_revs
+
+        if alembic_only or manager_only:
             msg = "Butler and alembic revisions are inconsistent --"
-            alembic_only = alembic_revs - manager_revs_set
-            manager_only = manager_revs_set - alembic_revs
             sep = ""
             if alembic_only:
                 alembic_only_str = ",".join(alembic_only)

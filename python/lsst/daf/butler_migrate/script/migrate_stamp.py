@@ -29,7 +29,7 @@ from typing import Dict, Optional
 
 from alembic import command
 
-from .. import config, database
+from .. import config, database, revision, scripts
 
 _LOG = logging.getLogger(__name__)
 
@@ -71,16 +71,27 @@ def migrate_stamp(
         _LOG.debug("found revision (%s, %s, %s) -> %s", mgr_name, klass, version, rev_id)
         revisions[mgr_name] = rev_id
 
+    cfg: config.MigAlembicConfig | None = None
     if manager:
-        if manager not in revisions:
-            raise ValueError(f"Unknown manager name {manager}")
-        revisions = {manager: revisions[manager]}
+        if manager in revisions:
+            revisions = {manager: revisions[manager]}
+        else:
+            # If specified manager not in the database, it may mean that an
+            # initial "tree-root" revision needs to be added to alembic
+            # table, if that manager is defined in the migration trees.
+            cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
+            script_info = scripts.Scripts(cfg)
+            base_revision = revision.rev_id(manager)
+            if base_revision not in script_info.base_revisions():
+                raise ValueError(f"Unknown manager name {manager} (not in the database or migrations)")
+            revisions = {manager: base_revision}
 
     if dry_run:
         print("Will store these revisions in alembic version table:")
         for manager, rev_id in revisions.items():
             print(f"  {manager}: {rev_id}")
     else:
-        cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
-        for revision in revisions.values():
-            command.stamp(cfg, revision, purge=purge)
+        if cfg is None:
+            cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
+        for rev in revisions.values():
+            command.stamp(cfg, rev, purge=purge)

@@ -101,7 +101,11 @@ class MigAlembicConfig(Config):
         cfg.set_section_option("daf_butler_migrate_options", "_daf_butler_migrate_options", "")
 
         if db is not None:
-            cfg.set_main_option("sqlalchemy.url", db.db_url)
+            # URL may contain URL-encoded items which include % sign, and that
+            # needs to be escaped with another % before it is passed to
+            # ConfigParser.
+            url = db.db_url.replace("%", "%%")
+            cfg.set_main_option("sqlalchemy.url", url)
             if db.schema:
                 cfg.set_section_option("daf_butler_migrate", "schema", db.schema)
 

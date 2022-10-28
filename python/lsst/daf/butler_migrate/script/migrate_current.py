@@ -29,7 +29,7 @@ from typing import Optional
 
 from alembic import command
 
-from .. import config, database
+from .. import config, database, scripts
 
 _LOG = logging.getLogger(__name__)
 
@@ -61,6 +61,7 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, names
             " stored dimensions configuration"
         )
 
+    cfg: config.MigAlembicConfig | None = None
     if butler:
         # Print current versions defined in butler.
         manager_versions = db.manager_versions(namespace)
@@ -77,4 +78,7 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, names
     # complain if alembic_version table is there but does not match manager
     # versions
     if db.alembic_revisions():
-        db.validate_revisions(namespace)
+        if cfg is None:
+            cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
+        script_info = scripts.Scripts(cfg)
+        db.validate_revisions(namespace, script_info.base_revisions())

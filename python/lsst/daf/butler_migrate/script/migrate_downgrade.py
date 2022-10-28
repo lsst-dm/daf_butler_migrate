@@ -29,7 +29,7 @@ from typing import Optional
 
 from alembic import command
 
-from .. import config, database
+from .. import config, database, scripts
 
 _LOG = logging.getLogger(__name__)
 
@@ -71,12 +71,13 @@ def migrate_downgrade(
             "Alembic version table does not exist, you may need to run `butler migrate stamp` first."
         )
 
-    # check that alembic versions are consistent with butler
-    db.validate_revisions(namespace)
-
     one_shot_arg: Optional[str] = None
     if one_shot_tree:
         one_shot_arg = one_shot_tree
     cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db, one_shot_tree=one_shot_arg)
+
+    # check that alembic versions are consistent with butler
+    script_info = scripts.Scripts(cfg)
+    db.validate_revisions(namespace, script_info.base_revisions())
 
     command.downgrade(cfg, revision, sql=sql)
