@@ -58,6 +58,12 @@ class Database:
     dimensions_config_manager = "dimensions-config"
     """Name of the special dimensions-config pseudo-manager (`str`)"""
 
+    obscore_json_key = "config:obscore.json"
+    """Key for obscore configuration in butler_attributes table (`str`)"""
+
+    obscore_config_manager = "obscore-config"
+    """Name of the special obscore-config pseudo-manager (`str`)"""
+
     def __init__(self, db_url: sqlalchemy.engine.url.URL, schema: Optional[str] = None):
         self._db_url = db_url
         self._schema = schema
@@ -77,11 +83,7 @@ class Database:
         butlerRoot = butlerConfig.get("root", butlerConfig.configDir)
         registryConfig.replaceRoot(butlerRoot)
         db_url = registryConfig.connectionString
-        schema: Optional[str] = None
-        try:
-            schema = butlerConfig["registry", "namespace"]
-        except KeyError:
-            pass
+        schema = registryConfig.get("namespace")
 
         _LOG.debug("db_url=%r, schema=%r", db_url, schema)
         return cls(db_url, schema)
@@ -176,12 +178,22 @@ class Database:
                     if namespace is not None:
                         managers[self.dimensions_config_manager] = namespace
                         versions[namespace] = str(dimensions_json["version"])
+                elif name == self.obscore_json_key:
+                    obscore_json = json.loads(value)
+                    namespace = obscore_json["namespace"]
+                    # make unique name to avoid clash with dimensions
+                    # namespace, prefix and colon will be dropped below.
+                    namespace = f"obscore-config:{namespace}"
+                    managers[self.obscore_config_manager] = namespace
+                    versions[namespace] = str(obscore_json["version"])
 
         # combine them into one structure
         revisions: Dict[str, Tuple[str, str, str]] = {}
         for manager, klass in managers.items():
             version = versions.get(klass)
             if version:
+                # drop special prefix
+                klass = klass.rpartition(":")[-1]
                 # for revision ID we use class name without module
                 rev_id_str = revision.rev_id(manager, klass.rpartition(".")[-1], version)
                 revisions[manager] = (klass, version, rev_id_str)
