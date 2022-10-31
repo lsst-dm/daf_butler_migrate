@@ -79,7 +79,7 @@ def migrate_stamp(
             # If specified manager not in the database, it may mean that an
             # initial "tree-root" revision needs to be added to alembic
             # table, if that manager is defined in the migration trees.
-            cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
+            cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
             script_info = scripts.Scripts(cfg)
             base_revision = revision.rev_id(manager)
             if base_revision not in script_info.base_revisions():
@@ -92,6 +92,6 @@ def migrate_stamp(
             print(f"  {manager}: {rev_id}")
     else:
         if cfg is None:
-            cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db)
+            cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
         for rev in revisions.values():
             command.stamp(cfg, rev, purge=purge)

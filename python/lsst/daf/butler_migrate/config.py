@@ -42,6 +42,7 @@ class MigAlembicConfig(Config):
         cls,
         mig_path: str,
         *args: Any,
+        repository: Optional[str] = None,
         db: Optional[database.Database] = None,
         single_tree: Optional[str] = None,
         one_shot_tree: Optional[str] = None,
@@ -54,6 +55,8 @@ class MigAlembicConfig(Config):
         ----------
         mig_path : `str`
             Filesystem path to location of revision trees.
+        repository : `str`
+            Path to repository configuration file.
         db : `database.Database`
             Object encapsulating access to database information.
         single_tree : `str`, optional
@@ -99,6 +102,9 @@ class MigAlembicConfig(Config):
         # [daf_butler_migrate] section exists
         cfg.set_section_option("daf_butler_migrate", "_daf_butler_migrate", "")
         cfg.set_section_option("daf_butler_migrate_options", "_daf_butler_migrate_options", "")
+
+        if repository is not None:
+            cfg.set_section_option("daf_butler_migrate", "repository", repository)
 
         if db is not None:
             # URL may contain URL-encoded items which include % sign, and that

@@ -10,7 +10,10 @@ import json
 
 import yaml
 from alembic import context, op
+from lsst.daf.butler.registries.sql import SqlRegistry
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
+from lsst.daf.butler_migrate.registry import make_registry
+from lsst.utils import doImportType
 
 # revision identifiers, used by Alembic.
 revision = "5449f6e37baf"
@@ -38,13 +41,11 @@ def upgrade() -> None:
 
     obscore_config = _read_obscore_config()
     _migrate(obscore_config)
-
-    # We have to create actual obscore table, and using the manager is the
-    # only reasonable way to do it.
+    _make_obscore_table(obscore_config)
 
     print(
         "*** Before anything can be written the upgraded Registry you need to run\n"
-        "*** `butler obscore-make-table` command (defined in dax_obscore package)."
+        "*** `butler obscore-update-table` command (defined in dax_obscore package)."
     )
 
 
@@ -57,6 +58,11 @@ def downgrade() -> None:
     """
 
     _migrate(None)
+
+    print(
+        "*** Obscore configuration has been removed from butler_attributes,\n"
+        "*** but the actual obscore table(s) have to be dropped manually."
+    )
 
 
 def _migrate(obscore_config: dict | None) -> None:
@@ -93,7 +99,7 @@ def _read_obscore_config() -> dict:
     if obscore_config_path is None:
         raise ValueError(
             "This migration script requires an obscore configuration file in YAML format."
-            " Please use `--options obscore_config=<path>` command line option."
+            " Please use `--options obscore_config=/path/to/butler.yaml` command line option."
         )
 
     # Ideally we want to verify YAML file to match obscore configuration, but
@@ -120,3 +126,44 @@ def _read_obscore_config() -> dict:
         )
 
     return obscore_config
+
+
+def _make_obscore_table(obscore_config: dict) -> None:
+    """Create obecore table."""
+
+    mig_context = context.get_context()
+    schema = mig_context.version_table_schema
+    bind = op.get_bind()
+
+    attributes = ButlerAttributes(bind, schema)
+
+    # We have to create actual obscore table, and using the manager is the
+    # only reasonable way to do it.
+    manager_class_name = attributes.get("config:registry.managers.obscore")
+    if manager_class_name is None:
+        raise ValueError("Registry obscore manager has to be configured in butler_attributes")
+    manager_class = doImportType(manager_class_name)
+
+    repository = context.config.get_section_option("daf_butler_migrate", "repository")
+    assert repository is not None, "Need repository in configuration"
+    registry = make_registry(repository)
+    assert isinstance(registry, SqlRegistry), "Can only work with SQL registry"  # for mypy
+
+    # Registry has no interface for creating table for just one manager, so
+    # here is a hackish way to do it which depends on knowing internals.
+    database = registry._db
+    managers = registry._managers
+    with database.declareStaticTables(create=False) as staticTablesContext:
+        manager = manager_class.initialize(
+            database,
+            staticTablesContext,
+            universe=registry.dimensions,
+            config=obscore_config,
+            datasets=managers.datasets.__class__,
+            dimensions=managers.dimensions,
+        )
+    # Note that we are using bind from migration context, and not from
+    # Registry. This should work in general, but watch for any surprises.
+    # Reflecting metadata is needed for foreign key in obscore table.
+    database._metadata.reflect(bind, schema=schema)
+    manager.table.create(bind)

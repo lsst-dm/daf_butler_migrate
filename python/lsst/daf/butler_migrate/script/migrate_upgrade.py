@@ -81,7 +81,7 @@ def migrate_upgrade(
     if one_shot_tree:
         one_shot_arg = one_shot_tree
     cfg = config.MigAlembicConfig.from_mig_path(
-        mig_path, db=db, one_shot_tree=one_shot_arg, migration_options=options
+        mig_path, repository=repo, db=db, one_shot_tree=one_shot_arg, migration_options=options
     )
 
     # check that alembic versions are consistent with butler

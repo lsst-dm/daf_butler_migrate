@@ -74,7 +74,7 @@ def migrate_downgrade(
     one_shot_arg: Optional[str] = None
     if one_shot_tree:
         one_shot_arg = one_shot_tree
-    cfg = config.MigAlembicConfig.from_mig_path(mig_path, db=db, one_shot_tree=one_shot_arg)
+    cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db, one_shot_tree=one_shot_arg)
 
     # check that alembic versions are consistent with butler
     script_info = scripts.Scripts(cfg)
