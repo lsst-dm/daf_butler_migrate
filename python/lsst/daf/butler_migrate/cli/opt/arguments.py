@@ -51,7 +51,9 @@ manager_argument = MWArgumentDecorator(
     "manager",
     help=(
         "MANAGER is a name of the manager for which to stamp the revision, "
-        "if missing then all managers are stamped."
+        "if missing then all managers already defined in butler_attributes "
+        "are stamped. To stamp initial revision for a manager not in "
+        "butler_attributes, provide its name explicitly."
     ),
     required=False,
 )

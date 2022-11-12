@@ -63,6 +63,19 @@ class ButlerAttributes:
         row = result.fetchone()
         return row[0] if row is not None else None
 
+    def insert(self, name: str, value: str) -> None:
+        """Insert new parameter in butler_attributes table.
+
+        Parameters
+        ----------
+        name : `str`
+            New attribute name.
+        value : `str`
+            Attribute value.
+        """
+        sql = self._table.insert().values(name=name, value=value)
+        self._connection.execute(sql)
+
     def update(self, name: str, value: str) -> int:
         """Update the value of existing parameter in butler_attributes table.
 
@@ -82,6 +95,17 @@ class ButlerAttributes:
         # update version
         sql = self._table.update().where(self._table.columns.name == name).values(value=value)
         return self._connection.execute(sql).rowcount
+
+    def delete(self, name: str) -> None:
+        """Delete parameter from butler_attributes table.
+
+        Parameters
+        ----------
+        name : `str`
+            Attribute name.
+        """
+        sql = self._table.delete().where(self._table.columns.name == name)
+        self._connection.execute(sql)
 
     def get_dimensions_json(self) -> Dict[str, Any]:
         """Return dimensions configuration from dimensions.json.

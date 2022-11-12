@@ -21,17 +21,8 @@
 
 from __future__ import annotations
 
-import logging
 import os
-import uuid
 from typing import Dict, List, Optional
-
-_LOG = logging.getLogger(__name__)
-
-NS_UUID = uuid.UUID("840b31d9-05cd-5161-b2c8-00d32b280d0f")
-"""Namespace UUID used for UUID5 generation. Do not change. This was
-produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
-"""
 
 
 class MigrationTrees:
