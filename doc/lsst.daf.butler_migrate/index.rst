@@ -6,46 +6,45 @@
 lsst.daf.butler_migrate
 #######################
 
-.. Paragraph that describes what this Python module does and links to related modules and frameworks.
+.. _lsst.daf.butler_migrate-using:
 
-.. .. _lsst.daf.butler_migrate-using:
+Using migration tools
+=====================
 
-.. Using lsst.daf.butler_migrate
-.. ==========================
+This package provides tools for performing database schema migration on Butler registries.
+Database migrations are defined as scripts executed by these tools, this package also serves as a repository for these scripts.
 
-.. toctree linking to topics related to using the module's APIs.
+.. toctree::
+   :maxdepth: 1
 
-.. .. toctree::
-..    :maxdepth: 1
+   concepts.rst
+   command-line.rst
+   migration-scripts.rst
+   typical-tasks.rst
 
-.. _lsst.daf.butler_migrate-contributing:
+Migrations catalog
+==================
 
-Contributing
-============
+Links below lead to the description of existing migration scripts for each of the manager types.
 
-``lsst.daf.butler_migrate`` is developed at https://github.com/lsst/daf_butler_migrate.
-You can find Jira issues for this module under the `daf_butler_migrate <https://jira.lsstcorp.org/issues/?jql=project%20%3D%20DM%20AND%20component%20%3D%20daf_butler_migrate>`_ component.
+.. toctree::
+   :maxdepth: 1
 
-.. If there are topics related to developing this module (rather than using it), link to this from a toctree placed here.
+   migrations/collections.rst
+   migrations/datasets.rst
+   migrations/datastores.rst
+   migrations/dimensions.rst
+   migrations/dimensions-config.rst
+   migrations/opaque.rst
 
-.. .. toctree::
-..    :maxdepth: 1
 
-.. .. _lsst.daf.butler_migrate-scripts:
+Implementation details
+======================
 
-.. Script reference
-.. ================
+``daf_butler_migrate`` does not provide public API.
+This package is also very special because it is supposed to work with database schemas created by different (even incompatible) releases.
+Due to that it cannot depend directly on many features of ``daf_butler``, dependencies are limited to the most stable parts of its API.
+Small subset of ``daf_butler`` API was re-implemented in this package to avoid dependency issues.
 
-.. .. TODO: Add an item to this toctree for each script reference topic in the scripts subdirectory.
-
-.. .. toctree::
-..    :maxdepth: 1
-
-.. .. _lsst.daf.butler_migrate-pyapi:
-
-Python API reference
-====================
-
-.. automodapi:: lsst.daf.butler_migrate
-   :no-main-docstr:
-   :no-inheritance-diagram:
+Even with the very limited dependencies it is not guaranteed that ``daf_butler_migrate`` will be completely backward compatible.
+Migrating older registries may require use of older releases and older version of this package.

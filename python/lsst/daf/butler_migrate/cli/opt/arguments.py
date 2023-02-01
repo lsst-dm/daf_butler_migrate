@@ -27,12 +27,16 @@ tree_name_argument = MWArgumentDecorator(
     "tree-name",
     help=(
         "TREE_NAME is the revision tree name, usually it is the name "
-        "of a registry manager (e.g. 'datasets')."
+        "of a registry manager type (e.g. 'datasets')."
     ),
 )
 
 class_argument = MWArgumentDecorator(
-    "manager-class", help="MANAGER_CLASS is the name of the manager class, not including module name."
+    "manager-class",
+    help=(
+        "MANAGER_CLASS is the name of the manager class (or a namespace in case of special trees), "
+        "not including module name."
+    ),
 )
 
 version_argument = MWArgumentDecorator(
@@ -66,7 +70,6 @@ namespace_argument = MWArgumentDecorator(
     ),
     required=False,
 )
-
 
 tables_argument = MWArgumentDecorator(
     "table",
