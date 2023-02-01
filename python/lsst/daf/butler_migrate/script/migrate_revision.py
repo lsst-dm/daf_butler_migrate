@@ -114,7 +114,6 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str, version:
 
 
 def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str, version: str) -> None:
-
     cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     scripts = ScriptDirectory.from_config(cfg)
 

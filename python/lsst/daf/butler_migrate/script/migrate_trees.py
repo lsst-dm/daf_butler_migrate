@@ -76,7 +76,6 @@ def migrate_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
 
 
 def _migrate_trees_one_shot(mig_path: str, verbose: bool) -> None:
-
     # one-shot trees are just folders in _oneshot folder
 
     migrate_trees = migrate.MigrationTrees(mig_path)
@@ -85,7 +84,6 @@ def _migrate_trees_one_shot(mig_path: str, verbose: bool) -> None:
     tree_names = sorted(one_shot_locations.keys())
 
     for entry in sorted(tree_names):
-
         cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=entry)
         scripts = ScriptDirectory.from_config(cfg)
 

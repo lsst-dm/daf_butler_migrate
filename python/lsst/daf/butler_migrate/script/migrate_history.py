@@ -57,13 +57,11 @@ def migrate_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool
 
 
 def _one_shot_migrate_history(tree_name: str, mig_path: str, verbose: bool) -> None:
-
     if tree_name:
         # if tree name is given then nothing to do for us
         cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
         command.history(cfg, verbose=verbose)
     else:
-
         migrate_trees = migrate.MigrationTrees(mig_path)
         locations = migrate_trees.one_shot_locations(relative=False)
         for tree_name in locations.keys():

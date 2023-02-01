@@ -50,7 +50,6 @@ def migrate_set_namespace(repo: str, namespace: Optional[str], update: bool) -> 
     db_namespace = db.dimensions_namespace()
 
     if not namespace:
-
         # Print current value
         if not db_namespace:
             print("No namespace defined in dimensions configuration.")
@@ -58,7 +57,6 @@ def migrate_set_namespace(repo: str, namespace: Optional[str], update: bool) -> 
             print("Current dimensions namespace:", db_namespace)
 
     else:
-
         if db_namespace and not update:
             raise ValueError(
                 f"Namespace is already defined ({db_namespace}), use --update option to replace it."

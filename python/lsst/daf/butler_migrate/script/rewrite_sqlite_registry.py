@@ -117,7 +117,6 @@ def rewrite_sqlite_registry(source: str) -> None:
     # the existing repositor).
     root_dir = source_config_uri.dirname().ospath
     with tempfile.TemporaryDirectory(prefix="temp-butler-", dir=root_dir) as dest_dir:
-
         # Create a new butler with this config as the seed but ensuring that it
         # does not overwrite the datastore root.
         dest_config = Butler.makeRepo(
