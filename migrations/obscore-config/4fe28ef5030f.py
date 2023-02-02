@@ -1,8 +1,8 @@
-"""Migration script for obscore-config namespace=oga version=1.
+"""Migration script for obscore-config namespace=embargo version=1.
 
-Revision ID: 5449f6e37baf
+Revision ID: 4fe28ef5030f
 Revises: 2daeabfb5019
-Create Date: 2022-10-28 10:52:49.700164
+Create Date: 2023-02-02 10:28:46.217250
 
 """
 
@@ -16,15 +16,15 @@ from lsst.daf.butler_migrate.registry import make_registry
 from lsst.utils import doImportType
 
 # revision identifiers, used by Alembic.
-revision = "5449f6e37baf"
+revision = "4fe28ef5030f"
 down_revision = "2daeabfb5019"
-branch_labels = ("obscore-config-oga",)
+branch_labels = ("obscore-config-embargo",)
 depends_on = None
 
-# Namespace
-_NAMESPACE = "oga"
+# Namespace, config file must have the same namespace
+_NAMESPACE = "embargo"
 
-# Version
+# Version, config file must have the same version
 _VERSION = 1
 
 
@@ -45,7 +45,7 @@ def upgrade() -> None:
 
     print(
         "*** Before anything can be written the upgraded Registry you need to run\n"
-        "*** `butler obscore-update-table` command (defined in dax_obscore package)."
+        "*** `butler obscore update-table` command (defined in dax_obscore package)."
     )
 
 
