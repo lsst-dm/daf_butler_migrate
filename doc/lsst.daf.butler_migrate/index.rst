@@ -44,7 +44,7 @@ Implementation details
 ``daf_butler_migrate`` does not provide public API.
 This package is also very special because it is supposed to work with database schemas created by different (even incompatible) releases.
 Due to that it cannot depend directly on many features of ``daf_butler``, dependencies are limited to the most stable parts of its API.
-Small subset of ``daf_butler`` API was re-implemented in this package to avoid dependency issues.
+A small subset of ``daf_butler`` API was re-implemented in this package to avoid dependency issues.
 
 Even with the very limited dependencies it is not guaranteed that ``daf_butler_migrate`` will be completely backward compatible.
 Migrating older registries may require use of older releases and older version of this package.

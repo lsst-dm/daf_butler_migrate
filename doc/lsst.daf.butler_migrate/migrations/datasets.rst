@@ -2,14 +2,14 @@
 Migrations for datasets manager
 ###############################
 
-``datasets`` tree has two branches:
+The ``datasets`` tree has two branches:
 
-- ``datasets-ByDimensionsDatasetRecordStorageManager`` which is older implementation of manager using integer dataset IDs.
-- ``datasets-ByDimensionsDatasetRecordStorageManagerUUID`` - new implementation using UUIDs.
+- ``datasets-ByDimensionsDatasetRecordStorageManager`` which is the older implementation of the manager using integer dataset IDs.
+- ``datasets-ByDimensionsDatasetRecordStorageManagerUUID`` which is the new implementation using UUIDs.
 
-Regular revision tree has migrations defined for all manager versions existed in our code, but none of these migrations was actually implemented.
+The regular revision tree has migrations defined for all manager versions that have existed in our code, but none of these migrations were actually implemented.
 
-There is a one-shot migration implemented for migration from ByDimensionsDatasetRecordStorageManager 1.0.0 to ByDimensionsDatasetRecordStorageManagerUUID 1.0.0::
+There is a one-shot migration implemented for migration from ``ByDimensionsDatasetRecordStorageManager`` 1.0.0 to ``ByDimensionsDatasetRecordStorageManagerUUID`` 1.0.0::
 
     $ butler migrate show-history --one-shot
     635083325f20 -> 2101fbf51ad3 (datasets) (head), Migration script for ByDimensionsDatasetRecordStorageManagerUUID 1.0.0.

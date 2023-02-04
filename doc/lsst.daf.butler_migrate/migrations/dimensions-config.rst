@@ -2,9 +2,9 @@
 Migrations for dimensions-config manager
 ########################################
 
-``dimensions-config`` is a special manager which does not have corresponding Python implementation, but corresponds to the contents of dimension configuration.
-This configuration is stored in ``config:dimensions.json`` key in ``butler_attributes``.
-Different butler databases may have incompatible dimension configurations, to distinguish them the ``namespace`` key in configuration defines a unique name for configuration.
+The ``dimensions-config`` is a special manager which does not have a corresponding Python implementation, but corresponds to the contents of the dimension configuration.
+This configuration is stored in the ``config:dimensions.json`` key in ``butler_attributes``.
+Different butler databases may have incompatible dimension configurations; to distinguish them the ``namespace`` key in the configuration defines a unique name for that configuration.
 This namespace is used for revision branches in ``dimensions-config`` revision tree.
 A standard dimensions configuration shipped with ``daf_butler`` defines its namespace as "daf_butler".
 
@@ -16,8 +16,8 @@ daf_butler 0 (from root)
 
 Migration script: `1601d5973bf8.py <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/f3bcee34f344.py>`_
 
-Version 0 was the initial version of dimensions configuration, and that version did not even have a ``namespace`` key.
-The migration script is a placeholder, the migration methods are empty.
+Version 0 was the initial version of the dimensions configuration, and that version did not even have a ``namespace`` key.
+The migration script is a placeholder; the migration methods are empty.
 
 
 daf_butler 0 to 1
@@ -31,7 +31,7 @@ Changes in version 1:
 - Add ``healpix`` to skypix configuration.
 
 There is no actual changes to database schema, only configuration is updated.
-Running this upgrade requires ``--namespace=daf_butler`` option.
+Running this upgrade requires the ``--namespace=daf_butler`` option.
 
 
 daf_butler 1 to 2
@@ -44,7 +44,7 @@ Changes in version 2:
 - Updates related to visit system changes
 - New ``visit_system_membership`` table and new columns in instrument, exposure and visit tables.
 
-Running this upgrade requires ``--options has_simulated=0`` (or ``1`` for simulated data) option.
+Running this upgrade requires the ``--options has_simulated=0`` (or ``1`` for simulated data) option.
 
 
 daf_butler 2 to 3
