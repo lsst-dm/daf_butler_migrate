@@ -89,7 +89,6 @@ def migrate_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
     # may need to initialize the whole shebang
     alembic_folder = trees.alembic_folder(relative=False)
     if not os.access(alembic_folder, os.F_OK):
-
         _LOG.debug("Creating new alembic folder %r", alembic_folder)
 
         # initialize tree folder

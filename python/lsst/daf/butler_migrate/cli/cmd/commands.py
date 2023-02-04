@@ -54,22 +54,22 @@ def migrate() -> None:
     pass
 
 
-@migrate.command(short_help="Create new version tree.", cls=ButlerCommand)
+@migrate.command(short_help="Create new revision tree.", cls=ButlerCommand)
 @mig_path_option
 @one_shot_option
 @tree_name_argument()
 def add_tree(*args: Any, **kwargs: Any) -> None:
-    """Create new version tree."""
+    """Create new revision tree for a specified manager type."""
     script.migrate_add_tree(*args, **kwargs)
 
 
-@migrate.command(short_help="Show version history.", cls=ButlerCommand)
+@migrate.command(short_help="Show revision history.", cls=ButlerCommand)
 @verbose_option
 @mig_path_exist_option
 @one_shot_option
 @tree_name_argument(required=False)
 def show_history(*args: Any, **kwargs: Any) -> None:
-    """Display version history for a tree."""
+    """Display revision history for a tree."""
     script.migrate_history(*args, **kwargs)
 
 
@@ -84,12 +84,12 @@ def add_revision(*args: Any, **kwargs: Any) -> None:
     script.migrate_revision(*args, **kwargs)
 
 
-@migrate.command(short_help="Print a list of known version trees.", cls=ButlerCommand)
+@migrate.command(short_help="Print a list of known revision trees.", cls=ButlerCommand)
 @verbose_option
 @mig_path_exist_option
 @one_shot_option
 def show_trees(*args: Any, **kwargs: Any) -> None:
-    """Print a list of known version trees."""
+    """Print a list of known revision trees (manager types)."""
     script.migrate_trees(*args, **kwargs)
 
 
@@ -101,18 +101,30 @@ def show_trees(*args: Any, **kwargs: Any) -> None:
 @repo_argument(required=True)
 @manager_argument()
 def stamp(*args: Any, **kwargs: Any) -> None:
-    """Stamp revision table with current registry versions."""
+    """Stamp Alembic revision table (alembic_version) with current manager
+    versions from butler_attributes.
+    """
     script.migrate_stamp(*args, **kwargs)
 
 
 @migrate.command(short_help="Display current revisions for a database.", cls=ButlerCommand)
 @verbose_option
-@click.option("--butler", help="Display butler version numbers for managers.", is_flag=True)
+@click.option(
+    "--butler",
+    help=(
+        "Display butler version numbers for managers from butler_attributes table. "
+        "By default revisions from alembic_version table are displayed, if that table "
+        "does not exist the output will be empty."
+    ),
+    is_flag=True,
+)
 @namespace_option
 @mig_path_exist_option
 @repo_argument(required=True)
 def show_current(*args: Any, **kwargs: Any) -> None:
-    """Display current revisions for a database."""
+    """Display current revisions from either alembic_version or
+    butler_attributes tables.
+    """
     script.migrate_current(*args, **kwargs)
 
 
@@ -169,5 +181,5 @@ def set_namespace(**kwargs: Any) -> None:
 @repo_argument(required=True)
 @tables_argument(required=False)
 def dump_schema(**kwargs: Any) -> None:
-    """Add or update namespace attribute to dimensions.json"""
+    """Dump database schema in human-readable format."""
     script.migrate_dump_schema(**kwargs)

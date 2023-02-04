@@ -291,7 +291,6 @@ class Database:
         inspector = sqlalchemy.inspect(engine)
         table_names = sorted(inspector.get_table_names(schema=self._schema))
         for table in table_names:
-
             if tables and table not in tables:
                 continue
 

@@ -1,13 +1,13 @@
 """Sphinx configuration file for an LSST stack package.
-
 This configuration only affects single-package Sphinx documentation builds.
+For more information, see:
+https://developer.lsst.io/stack/building-single-package-docs.html
 """
+# flake8: noqa
 
-from documenteer.sphinxconfig.stackconf import build_package_configs
-import lsst.daf.butler_migrate
+from documenteer.conf.pipelinespkg import *
 
-
-_g = globals()
-_g.update(build_package_configs(
-    project_name='daf_butler_migrate',
-    version=lsst.daf.butler_migrate.version.__version__))
+project = "daf_butler_migrate"
+html_theme_options["logotext"] = project
+html_title = project
+html_short_title = project
