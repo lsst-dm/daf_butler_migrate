@@ -25,7 +25,8 @@ __all__ = ["get_digest"]
 
 
 import hashlib
-from typing import Iterable, Set
+from collections.abc import Iterable
+from typing import cast
 
 import sqlalchemy
 
@@ -34,7 +35,7 @@ def get_digest(
     tables: Iterable[sqlalchemy.schema.Table],
     dialect: sqlalchemy.engine.Dialect,
     *,
-    nullable_columns: Set[str] = set(),
+    nullable_columns: set[str] = set(),
 ) -> str:
     """Calculate digest for a schema based on list of tables schemas.
 
@@ -71,7 +72,7 @@ def get_digest(
 
 
 def _tableSchemaRepr(
-    table: sqlalchemy.schema.Table, dialect: sqlalchemy.engine.Dialect, nullable_columns: Set[str]
+    table: sqlalchemy.schema.Table, dialect: sqlalchemy.engine.Dialect, nullable_columns: set[str]
 ) -> str:
     """Make string representation of a single table schema.
 
@@ -102,7 +103,7 @@ def _tableSchemaRepr(
     for fkConstr in table.foreign_key_constraints:
         # for foreign key we include only one side of relations into
         # digest, other side could be managed by different extension
-        fkReps = ["FK", fkConstr.name] + [fk.column.name for fk in fkConstr.elements]
+        fkReps = ["FK", cast(str, fkConstr.name)] + [fk.column.name for fk in fkConstr.elements]
         fkRep = ",".join(fkReps)
         schemaReps += [fkRep]
     # sort everything to keep it stable

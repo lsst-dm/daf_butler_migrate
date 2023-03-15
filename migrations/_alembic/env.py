@@ -1,7 +1,5 @@
-from sqlalchemy import engine_from_config
-from sqlalchemy import engine
-from sqlalchemy import pool
 from alembic import context
+from sqlalchemy import engine, engine_from_config, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -53,22 +51,21 @@ def run_migrations_online() -> None:
 
     """
     # executemany_* arguments are postgres-specific, need to check dialect
-    url = engine.url.make_url(config.get_main_option("sqlalchemy.url"))
+    url_str = config.get_main_option("sqlalchemy.url")
+    assert url_str is not None, "Expect URL connection defined."
+    url = engine.url.make_url(url_str)
     if url.get_dialect().name == "postgresql":
         kwargs = dict(
-            executemany_mode='values',
+            executemany_mode="values",
             executemany_values_page_size=10000,
             executemany_batch_page_size=500,
         )
     else:
         kwargs = {}
 
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-        **kwargs
-    )
+    config_dict = config.get_section(config.config_ini_section)
+    assert config_dict is not None, "Expect non-empty configuration"
+    connectable = engine_from_config(config_dict, prefix="sqlalchemy.", poolclass=pool.NullPool, **kwargs)
 
     schema = config.get_section_option("daf_butler_migrate", "schema")
     with connectable.connect() as connection:

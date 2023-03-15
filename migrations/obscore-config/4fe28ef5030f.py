@@ -165,5 +165,6 @@ def _make_obscore_table(obscore_config: dict) -> None:
     # Note that we are using bind from migration context, and not from
     # Registry. This should work in general, but watch for any surprises.
     # Reflecting metadata is needed for foreign key in obscore table.
+    assert database._metadata is not None
     database._metadata.reflect(bind, schema=schema)
     manager.table.create(bind)

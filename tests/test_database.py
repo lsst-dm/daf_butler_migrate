@@ -65,7 +65,7 @@ def make_revision_tables(
     make_alembic: bool = True,
     fill_alembic: bool = True,
     broken_alembic: bool = False,
-) -> Iterator[str]:
+) -> Iterator[sqlalchemy.engine.url.URL]:
     """Create simple sqlite database with butler_attributes populated.
 
     Yields
@@ -88,9 +88,9 @@ def make_revision_tables(
                 queries += _queries_alembic_version[1:]
 
     with temporaryDirectory() as folder:
-        db_url = f"sqlite:///{folder}/test_db.sqlite3"
+        db_url = sqlalchemy.engine.make_url(f"sqlite:///{folder}/test_db.sqlite3")
         engine = sqlalchemy.create_engine(db_url)
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             for query in queries:
                 conn.execute(sqlalchemy.text(query))
         yield db_url

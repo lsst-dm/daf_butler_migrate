@@ -11,7 +11,6 @@ from typing import Dict, List, Optional
 import sqlalchemy as sa
 from alembic import context, op
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
-from lsst.daf.butler_migrate.digests import get_digest
 from lsst.daf.butler_migrate.shrink import shrinkDatabaseEntityName
 
 # revision identifiers, used by Alembic.
@@ -90,12 +89,13 @@ def _migrate_visit_definition() -> None:
 
     mig_context = context.get_context()
     bind = mig_context.bind
+    assert bind is not None
     schema = mig_context.version_table_schema
-    metadata = sa.schema.MetaData(bind, schema=schema)
+    metadata = sa.schema.MetaData(schema=schema)
 
     table = "visit_system_membership"
     _LOG.info("creating %s table", table)
-    constraints = [
+    constraints: list[sa.schema.ColumnCollectionConstraint] = [
         _FKConstraint(table, ["instrument"], "instrument", ["name"], bind, schema=schema),
         _FKConstraint(
             table, ["instrument", "visit_system"], "visit_system", ["instrument", "id"], bind, schema=schema
@@ -117,6 +117,7 @@ def _migrate_visit_definition() -> None:
         *constraints,
         schema=schema,
     )
+    assert visit_membership is not None
 
     op.create_index(
         shrinkDatabaseEntityName("_".join([table, "fkidx", "instrument", "visit_system"]), bind),
@@ -146,7 +147,7 @@ def _migrate_visit_definition() -> None:
         visit_definition.columns["visit"],
     ).distinct()
     sql = visit_membership.insert().from_select(["instrument", "visit_system", "visit"], selection)
-    op.execute(sql)
+    op.execute(sql)  # type: ignore[arg-type]
 
     # Drop visit_system from visit_definition.
     with op.batch_alter_table("visit_definition", schema=schema) as batch_op:
@@ -157,10 +158,12 @@ def _migrate_visit_definition() -> None:
         # even have name for PK constraint, so it cannot be dropped
         # explicitly.
         if bind.dialect.name == "postgresql":
-            batch_op.drop_constraint("visit_definition_pkey")
-        batch_op.create_primary_key("visit_definition_pkey", ["instrument", "exposure", "visit"])
-        batch_op.drop_index("visit_definition_fkidx_instrument_visit_system")
-        batch_op.drop_column("visit_system")
+            batch_op.drop_constraint("visit_definition_pkey")  # type: ignore[attr-defined]
+        batch_op.create_primary_key(  # type: ignore[attr-defined]
+            "visit_definition_pkey", ["instrument", "exposure", "visit"]
+        )
+        batch_op.drop_index("visit_definition_fkidx_instrument_visit_system")  # type: ignore[attr-defined]
+        batch_op.drop_column("visit_system")  # type: ignore[attr-defined]
 
 
 def _migrate_instrument() -> None:
@@ -168,7 +171,7 @@ def _migrate_instrument() -> None:
     mig_context = context.get_context()
     bind = mig_context.bind
     schema = mig_context.version_table_schema
-    metadata = sa.schema.MetaData(bind, schema=schema)
+    metadata = sa.schema.MetaData(schema=schema)
 
     _LOG.info("Migrating instrument table")
     op.add_column(
@@ -195,14 +198,14 @@ def _migrate_visit() -> None:
     mig_context = context.get_context()
     bind = mig_context.bind
     schema = mig_context.version_table_schema
-    metadata = sa.schema.MetaData(bind, schema=schema)
+    metadata = sa.schema.MetaData(schema=schema)
 
     _LOG.info("migrating visit table")
     with op.batch_alter_table("visit", schema=schema) as batch_op:
-        batch_op.drop_index("visit_fkidx_instrument_visit_system")
-        batch_op.drop_column("visit_system")
-        batch_op.add_column(sa.Column("seq_num", sa.BigInteger))
-        batch_op.add_column(sa.Column("azimuth", sa.Float))
+        batch_op.drop_index("visit_fkidx_instrument_visit_system")  # type: ignore[attr-defined]
+        batch_op.drop_column("visit_system")  # type: ignore[attr-defined]
+        batch_op.add_column(sa.Column("seq_num", sa.BigInteger))  # type: ignore[attr-defined]
+        batch_op.add_column(sa.Column("azimuth", sa.Float))  # type: ignore[attr-defined]
 
     # Fill seq_num column with the lowest value of matching exposure.seq_num.
     #
@@ -227,7 +230,7 @@ def _migrate_visit() -> None:
     exposure = sa.schema.Table("exposure", metadata, autoload_with=bind, schema=schema)
     visit_def = sa.schema.Table("visit_definition", metadata, autoload_with=bind, schema=schema)
 
-    min_seq = (
+    min_seq: sa.sql.Select = (
         sa.select(sa.sql.functions.min(exposure.columns["seq_num"]))
         .select_from(exposure.join(visit_def))
         .where(
@@ -252,14 +255,14 @@ def _migrate_exposure(has_simulated: bool) -> None:
     mig_context = context.get_context()
     bind = mig_context.bind
     schema = mig_context.version_table_schema
-    metadata = sa.schema.MetaData(bind, schema=schema)
+    metadata = sa.schema.MetaData(schema=schema)
 
     _LOG.info("migrating exposure table")
     with op.batch_alter_table("exposure", schema=schema) as batch_op:
-        batch_op.add_column(sa.Column("seq_start", sa.BigInteger))
-        batch_op.add_column(sa.Column("seq_end", sa.BigInteger))
-        batch_op.add_column(sa.Column("azimuth", sa.Float))
-        batch_op.add_column(sa.Column("has_simulated", sa.Boolean))
+        batch_op.add_column(sa.Column("seq_start", sa.BigInteger))  # type: ignore[attr-defined]
+        batch_op.add_column(sa.Column("seq_end", sa.BigInteger))  # type: ignore[attr-defined]
+        batch_op.add_column(sa.Column("azimuth", sa.Float))  # type: ignore[attr-defined]
+        batch_op.add_column(sa.Column("has_simulated", sa.Boolean))  # type: ignore[attr-defined]
 
     table = sa.schema.Table("exposure", metadata, autoload_with=bind, schema=schema)
     op.execute(
@@ -274,10 +277,10 @@ def _migrate_dimensions_json() -> None:
 
     mig_context = context.get_context()
     schema = mig_context.version_table_schema
+    assert mig_context.bind is not None
     attributes = ButlerAttributes(mig_context.bind, schema)
 
     def update_config(config: Dict) -> Dict:
-
         config["version"] = 2
 
         instrument = config["elements"]["instrument"]
@@ -381,7 +384,7 @@ def _migrate_dimensions_json() -> None:
     attributes.update_dimensions_json(update_config)
 
 
-def _migrate_schema_digest():
+def _migrate_schema_digest() -> None:
     """Update schema digest for dimension record tables.
 
     Note that that new releases, right before dimensions manager version
@@ -392,6 +395,7 @@ def _migrate_schema_digest():
 
     mig_context = context.get_context()
     bind = mig_context.bind
+    assert bind is not None
     if bind.dialect.name == "postgresql":
         digest = "689da2cd495d8caba0eb05cb137c177f"
     elif bind.dialect.name == "sqlite":
@@ -400,9 +404,11 @@ def _migrate_schema_digest():
         return
 
     schema = mig_context.version_table_schema
+    assert mig_context.bind is not None
     attributes = ButlerAttributes(mig_context.bind, schema)
 
     manager_class = attributes.get("config:registry.managers.dimensions")
+    assert manager_class is not None, "Missing dimensions manager class"
     assert manager_class.endswith(
         "StaticDimensionRecordStorageManager"
     ), f"Unexpected class name of dimensions manager {manager_class}"
@@ -410,4 +416,5 @@ def _migrate_schema_digest():
     _LOG.info("migrating dimensions schema digest")
 
     count = attributes.update(f"schema_digest:{manager_class}", digest)
-    assert count == 1, "expected to update single row"
+    # In newer releases schema digest may not be written to the table.
+    assert count < 2, "expected to update zero or one rows"

@@ -6,12 +6,11 @@ Create Date: 2022-05-19 15:40:18.561744
 
 """
 import logging
+from typing import cast
 
 import sqlalchemy as sa
 from alembic import context, op
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
-from lsst.daf.butler_migrate.digests import get_digest
-from sqlalchemy.engine.reflection import Inspector
 
 # revision identifiers, used by Alembic.
 revision = "035dcf13ef18"
@@ -57,9 +56,10 @@ def _do_migration(nullable: bool, manager_version: str) -> None:
     """
     mig_context = context.get_context()
     bind = mig_context.bind
+    assert bind is not None
     schema = mig_context.version_table_schema
 
-    inspector = Inspector.from_engine(bind)
+    inspector = sa.inspect(bind)
     attributes = ButlerAttributes(bind, schema)
 
     # To know dimension record tables and their implied columns we need to look
@@ -67,7 +67,6 @@ def _do_migration(nullable: bool, manager_version: str) -> None:
     config = attributes.get_dimensions_json()
     for element_name, element_config in config["elements"].items():
         if (implied := element_config.get("implies")) is not None:
-
             # some elements do not have tables
             if not inspector.has_table(element_name, schema=schema):
                 continue
@@ -82,20 +81,21 @@ def _do_migration(nullable: bool, manager_version: str) -> None:
                         _LOG.info("Add NULL to column %s.%s", element_name, other_element)
                     else:
                         _LOG.info("Add NOT NULL to column %s.%s", element_name, other_element)
-                    batch_op.alter_column(other_element, nullable=nullable)
+                    batch_op.alter_column(other_element, nullable=nullable)  # type: ignore[attr-defined]
 
     count = attributes.update(f"version:{MANAGER}", manager_version)
     assert count == 1, "expected to update single row"
 
 
-def _check_visit_null_filter():
+def _check_visit_null_filter() -> None:
     """In some cases we saw that visit.physical_filter column contains NULLs,
     and we need to replace that with some non-NULL values.
     """
     mig_context = context.get_context()
     bind = mig_context.bind
+    assert bind is not None
     schema = mig_context.version_table_schema
-    metadata = sa.schema.MetaData(bind, schema=schema)
+    metadata = sa.schema.MetaData(schema=schema)
 
     visit = sa.schema.Table("visit", metadata, autoload_with=bind, schema=schema)
     sql = (
@@ -103,9 +103,8 @@ def _check_visit_null_filter():
         .select_from(visit)
         .where(visit.columns["physical_filter"] == None)  # noqa: E711
     )
-    num_nulls = bind.execute(sql).scalar()
+    num_nulls = cast(int, bind.execute(sql).scalar())
     if num_nulls > 0:
-
         # User needs to pass special argument.
         config = context.config
         null_filter_value = config.get_section_option("daf_butler_migrate_options", "null_filter_value")
