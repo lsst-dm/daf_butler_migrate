@@ -75,6 +75,7 @@ def rewrite_sqlite_registry(source: str) -> None:
 
     # The source butler knows where its config came from.
     source_config_uri = source_butler._config.configFile
+    assert source_config_uri is not None, "Config file must not be None"
 
     # We need to read just the local configuration and not the expanded
     # one.

@@ -11,31 +11,29 @@ __all__ = ["get_digest"]
 
 import logging
 import time
-from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
 import uuid
+from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
 
-from alembic import op, context
 import sqlalchemy as sa
+from alembic import context, op
+from lsst.daf.butler_migrate.digests import get_digest
 from sqlalchemy.dialects.postgresql import UUID
 
-from lsst.daf.butler_migrate.digests import get_digest
-
-
 # revision identifiers, used by Alembic.
-revision = '2101fbf51ad3'
-down_revision = '635083325f20'
+revision = "2101fbf51ad3"
+down_revision = "635083325f20"
 branch_labels = None
 depends_on = None
 
 
 _LOG = logging.getLogger(__name__)
 
-NS_UUID = uuid.UUID('840b31d9-05cd-5161-b2c8-00d32b280d0f')
+NS_UUID = uuid.UUID("840b31d9-05cd-5161-b2c8-00d32b280d0f")
 """Namespace UUID used for UUID5 generation. Do not change. This was
 produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
 """
 
-UUID5_DATASET_TYPES = ("raw", )
+UUID5_DATASET_TYPES = ("raw",)
 """Collection of dataset type names for which we make UUID5 dataset IDs.
 """
 
@@ -60,6 +58,7 @@ class TableInfo(NamedTuple):
 
     Information only includes columns that are migrated.
     """
+
     primary_key: Optional[Dict]
     foreign_keys: List[Dict]
     unique_constraints: List[Dict]
@@ -176,8 +175,11 @@ def _tables_to_migrate(schema: str) -> List[str]:
     Tables are ordered based on their FK relation.
     """
     inspector = sa.inspect(op.get_bind())
-    tables = [table for table, _ in inspector.get_sorted_table_and_fkc_names(schema)
-              if table and (table in STATIC_TABLES or table.startswith(DYNAMIC_TABLES_PREFIX))]
+    tables = [
+        table
+        for table, _ in inspector.get_sorted_table_and_fkc_names(schema)
+        if table and (table in STATIC_TABLES or table.startswith(DYNAMIC_TABLES_PREFIX))
+    ]
     _LOG.debug("_tables_to_migrate: %s", tables)
     return tables
 
@@ -191,7 +193,6 @@ def _get_table_info(schema: str, table_names: List[str]) -> Dict[str, TableInfo]
 
     table_info: Dict[str, TableInfo] = {}
     for table in table_names:
-
         id_col = _id_column_name(table)
 
         pk = inspector.get_pk_constraint(table, schema)
@@ -225,8 +226,7 @@ def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
 
 
 def _make_id_map(schema: str, uuid_type: Any) -> None:
-    """Create id -> uuid mapping table.
-    """
+    """Create id -> uuid mapping table."""
     _LOG.info("creating %s table", ID_MAP_TABLE_NAME)
     op.create_table(
         ID_MAP_TABLE_NAME,
@@ -237,9 +237,10 @@ def _make_id_map(schema: str, uuid_type: Any) -> None:
 
 
 def _fill_id_map(metadata: sa.schema.MetaData) -> None:
-    """Fill mapping table generating UUIDs according to policies.
-    """
+    """Fill mapping table generating UUIDs according to policies."""
     table = _get_table(metadata, ID_MAP_TABLE_NAME)
+
+    dialect = op.get_bind().dialect
 
     start_time = time.time()
     count = 0
@@ -248,7 +249,11 @@ def _fill_id_map(metadata: sa.schema.MetaData) -> None:
         dataset_uuid = _makeDatasetId(run_name, dstype_name, dataId)
         # _LOG.debug("dataset_id: %r, run_name: %r, dstype_name: %r , dataId: %r, dataset_uuid: %r",
         #            dataset_id, run_name, dstype_name, dataId, str(dataset_uuid))
-        batch.append({"id": dataset_id, "uuid": str(dataset_uuid)})
+        if dialect.name == "sqlite":
+            uuid_str = dataset_uuid.hex
+        else:
+            uuid_str = str(dataset_uuid)
+        batch.append({"id": dataset_id, "uuid": uuid_str})
 
         if len(batch) >= 10000:
             op.bulk_insert(table, batch, multiinsert=True)
@@ -263,8 +268,9 @@ def _fill_id_map(metadata: sa.schema.MetaData) -> None:
         batch = []
 
     end_time = time.time()
-    _LOG.info("inserted total %s rows into %s in %.3f seconds",
-              count, ID_MAP_TABLE_NAME, end_time - start_time)
+    _LOG.info(
+        "inserted total %s rows into %s in %.3f seconds", count, ID_MAP_TABLE_NAME, end_time - start_time
+    )
 
 
 def _gen_refs(metadata: sa.schema.MetaData) -> Iterator[Tuple[str, str, int, Dict[str, Any]]]:
@@ -290,14 +296,14 @@ def _gen_refs(metadata: sa.schema.MetaData) -> Iterator[Tuple[str, str, int, Dic
 
     tag_tables = [table for table in metadata.tables.values() if table.name.startswith("dataset_tags_")]
     for table in tag_tables:
-
         # All columns except few are dimension columns. It is possible to
         # extract names from a dataset type and it related graph but that is a
         # bit more complex.
         dim_cols = [
-            col for col in table.columns
-            if col.name not in ("dataset_id", "dataset_id_uuid", "dataset_type_id",
-                                "collection_name", "collection_id")
+            col
+            for col in table.columns
+            if col.name
+            not in ("dataset_id", "dataset_id_uuid", "dataset_type_id", "collection_name", "collection_id")
         ]
         _LOG.debug("Making refs from %r table, dim_names: %s", table.name, [col.name for col in dim_cols])
 
@@ -311,20 +317,28 @@ def _gen_refs(metadata: sa.schema.MetaData) -> Iterator[Tuple[str, str, int, Dic
         if "collection_id" in collection.columns:
             select_from = select_from.join(
                 table,
-                sa.and_(dataset.columns.id == table.columns.dataset_id,
-                        table.columns.collection_id == collection.columns.collection_id))
+                sa.and_(
+                    dataset.columns.id == table.columns.dataset_id,
+                    table.columns.collection_id == collection.columns.collection_id,
+                ),
+            )
         else:
             select_from = select_from.join(
                 table,
-                sa.and_(dataset.columns.id == table.columns.dataset_id,
-                        table.columns.collection_name == collection.columns.name))
+                sa.and_(
+                    dataset.columns.id == table.columns.dataset_id,
+                    table.columns.collection_name == collection.columns.name,
+                ),
+            )
 
-        sql = sa.select([
-            col_dataset_type_name,
-            col_dataset_id,
-            col_collection_name,
-            *dim_cols,
-        ]).select_from(select_from)
+        sql = sa.select(
+            [
+                col_dataset_type_name,
+                col_dataset_id,
+                col_collection_name,
+                *dim_cols,
+            ]
+        ).select_from(select_from)
         _LOG.debug("sql: %s", sql)
         result = metadata.bind.execute(sql)
 
@@ -390,21 +404,15 @@ def _makeDatasetId(run_name: str, dstype_name: str, dataId: Dict[str, Any]) -> u
 
 
 def _id_column_name(table_name: str) -> str:
-    """Return dataset ID column name for a given table.
-    """
+    """Return dataset ID column name for a given table."""
     return "id" if table_name == "dataset" else "dataset_id"
 
 
 def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
-    """Add new uuid column to the table, column is nullable initially.
-    """
+    """Add new uuid column to the table, column is nullable initially."""
     column_name = _id_column_name(table_name) + "_uuid"
     _LOG.debug("Adding column %r to table %r", column_name, table_name)
-    op.add_column(
-        table_name,
-        sa.Column(column_name, uuid_type, nullable=True),
-        schema=schema
-    )
+    op.add_column(table_name, sa.Column(column_name, uuid_type, nullable=True), schema=schema)
 
     # Pedantic mode - add column comment
     if table_name == "dataset":
@@ -421,15 +429,15 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
     # generate UUIDs
     if table.name == "dataset":
         sql = table.update().values(
-            id_uuid=sa.select([map_table.columns.uuid]).where(
-                map_table.columns.id == table.columns.id
-            ).scalar_subquery()
+            id_uuid=sa.select([map_table.columns.uuid])
+            .where(map_table.columns.id == table.columns.id)
+            .scalar_subquery()
         )
     else:
         sql = table.update().values(
-            dataset_id_uuid=sa.select([map_table.columns.uuid]).where(
-                map_table.columns.id == table.columns.dataset_id
-            ).scalar_subquery()
+            dataset_id_uuid=sa.select([map_table.columns.uuid])
+            .where(map_table.columns.id == table.columns.dataset_id)
+            .scalar_subquery()
         )
     op.get_bind().execute(sql)
     _LOG.debug("Filled uuids in table %r", table.name)
@@ -444,7 +452,6 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
     id_col = _id_column_name(table_name)
 
     with op.batch_alter_table(table_name, schema) as batch_op:
-
         for index_dict in table_info.indices:
             index_name = index_dict["name"]
             _LOG.debug("Dropping index %s", index_dict)
@@ -460,12 +467,26 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
             _LOG.debug("Dropping foreign key %s", fk_name)
             batch_op.drop_constraint(fk_name)
 
-        # We probably don't need, pk will be dropped if column is dropped too
         if table_info.primary_key:
+            _LOG.debug("Primary key: %s", table_info.primary_key)
             pk_name = table_info.primary_key["name"]
             if pk_name:
                 _LOG.debug("Dropping primary key %s", pk_name)
                 batch_op.drop_constraint(pk_name)
+            else:
+                dialect = op.get_bind().dialect
+                if dialect.name == "sqlite":
+                    # In our schema SQLite does not have a name for primary key
+                    # for some reason, so there is no way to drop it, but we
+                    # have to do it because dropping column may result in a
+                    # uniqueness violation. Instead of dropping I try to
+                    # redefine the PK.
+                    columns = table_info.primary_key["constrained_columns"][:]
+                    if len(columns) > 1 and id_col in columns:
+                        idx = columns.index(id_col)
+                        columns[idx] += "_uuid"
+                        _LOG.debug("Creating primary key %s", columns)
+                        batch_op.create_primary_key(f"{table_name}_pkey", columns)
 
         # drop column
         _LOG.debug("Dropping column %s", id_col)
@@ -484,58 +505,58 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
 
 
 def _rename_column(table_name: str, schema: str) -> None:
-    """Rename UUID column to its final name, make it NOT NULL.
-    """
+    """Rename UUID column to its final name, make it NOT NULL."""
     id_col = _id_column_name(table_name)
     _LOG.debug("Renaming uuid column in table %s to %s", table_name, id_col)
 
-    op.alter_column(table_name, f"{id_col}_uuid", new_column_name=id_col, nullable=False, schema=schema)
+    with op.batch_alter_table(table_name, schema) as batch_op:
+        batch_op.alter_column(f"{id_col}_uuid", new_column_name=id_col, nullable=False)
 
 
 def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
-    """Re-create all constraint and indices on a table using new UUID column.
-    """
+    """Re-create all constraint and indices on a table using new UUID column."""
 
-    if table_info.primary_key:
-        pk_name = table_info.primary_key["name"]
-        _LOG.debug("Adding primary key %s", pk_name)
-        columns = table_info.primary_key["constrained_columns"]
-        op.create_primary_key(pk_name, table_name, columns, schema=schema)
+    with op.batch_alter_table(table_name, schema) as batch_op:
+        if table_info.primary_key:
+            pk_name = table_info.primary_key["name"]
+            if pk_name is None:
+                pk_name = f"{table_name}_pkey"
+            _LOG.debug("Adding primary key %s", pk_name)
+            columns = table_info.primary_key["constrained_columns"]
+            batch_op.create_primary_key(pk_name, columns)
 
-    for unique_dict in table_info.unique_constraints:
-        unique_name = unique_dict["name"]
-        _LOG.debug("Adding unique constraint %s", unique_name)
-        columns = unique_dict["column_names"]
-        op.create_unique_constraint(unique_name, table_name, columns, schema=schema)
+        for unique_dict in table_info.unique_constraints:
+            unique_name = unique_dict["name"]
+            _LOG.debug("Adding unique constraint %s", unique_name)
+            columns = unique_dict["column_names"]
+            batch_op.create_unique_constraint(unique_name, columns)
 
-    for index_dict in table_info.indices:
-        index_name = index_dict["name"]
-        _LOG.debug("Adding index %s", index_dict)
-        columns = index_dict["column_names"]
-        unique = index_dict["unique"]
-        op.create_index(index_name, table_name, columns, schema=schema, unique=unique)
+        for index_dict in table_info.indices:
+            index_name = index_dict["name"]
+            _LOG.debug("Adding index %s", index_dict)
+            columns = index_dict["column_names"]
+            unique = index_dict["unique"]
+            batch_op.create_index(index_name, columns, unique=unique)
 
-    for fk_dict in table_info.foreign_keys:
-        fk_name = fk_dict["name"]
-        _LOG.debug("Adding foreign key %s", fk_name)
-        ref_table = fk_dict["referred_table"]
-        ref_schema = fk_dict["referred_schema"]
-        local_cols = fk_dict["constrained_columns"]
-        remote_cols = fk_dict["referred_columns"]
-        # schema reflection does not provide ONDELETE value, but we know what
-        # it should be
-        ondelete = None
-        if table_name.startswith(DYNAMIC_TABLES_PREFIX):
-            ondelete = "CASCADE"
-        op.create_foreign_key(
-            fk_name, table_name, ref_table, local_cols, remote_cols,
-            ondelete=ondelete, source_schema=schema, referent_schema=ref_schema
-        )
+        for fk_dict in table_info.foreign_keys:
+            fk_name = fk_dict["name"]
+            _LOG.debug("Adding foreign key %s", fk_name)
+            ref_table = fk_dict["referred_table"]
+            ref_schema = fk_dict["referred_schema"]
+            local_cols = fk_dict["constrained_columns"]
+            remote_cols = fk_dict["referred_columns"]
+            # schema reflection does not provide ONDELETE value, but we know what
+            # it should be
+            ondelete = None
+            if table_name.startswith(DYNAMIC_TABLES_PREFIX):
+                ondelete = "CASCADE"
+            batch_op.create_foreign_key(
+                fk_name, ref_table, local_cols, remote_cols, ondelete=ondelete, referent_schema=ref_schema
+            )
 
 
 def _update_butler_attributes(metadata: sa.schema.MetaData) -> None:
-    """Update contents of butler_attributes with new version and digests.
-    """
+    """Update contents of butler_attributes with new version and digests."""
     _LOG.debug("Updating butler_attributes metadata")
 
     mgr_module = "lsst.daf.butler.registry.datasets.byDimensions._manager"
@@ -546,18 +567,18 @@ def _update_butler_attributes(metadata: sa.schema.MetaData) -> None:
     butler_attributes = _get_table(metadata, "butler_attributes")
 
     # remove existing records for old manager
-    sql = butler_attributes.delete(
-        butler_attributes.columns.name == f"version:{mgr_module}.{old_class}")
+    sql = butler_attributes.delete(butler_attributes.columns.name == f"version:{mgr_module}.{old_class}")
     bind.execute(sql)
     sql = butler_attributes.delete(
-        butler_attributes.columns.name == f"schema_digest:{mgr_module}.{old_class}")
+        butler_attributes.columns.name == f"schema_digest:{mgr_module}.{old_class}"
+    )
     bind.execute(sql)
 
     # update manager class name
-    sql = butler_attributes.update().values(
-        value=f"{mgr_module}.{new_class}"
-    ).where(
-        butler_attributes.columns.name == "config:registry.managers.datasets"
+    sql = (
+        butler_attributes.update()
+        .values(value=f"{mgr_module}.{new_class}")
+        .where(butler_attributes.columns.name == "config:registry.managers.datasets")
     )
     bind.execute(sql)
 
@@ -569,10 +590,13 @@ def _update_butler_attributes(metadata: sa.schema.MetaData) -> None:
     digest = get_digest(tables, bind.dialect, nullable_columns={"id", "dataset_id"})
     _LOG.debug("new schema digest for datasets manager: %s", digest)
     sql = butler_attributes.insert()
-    bind.execute(sql, [
-        {"name": f"version:{mgr_module}.{new_class}", "value": "1.0.0"},
-        {"name": f"schema_digest:{mgr_module}.{new_class}", "value": digest},
-    ])
+    bind.execute(
+        sql,
+        [
+            {"name": f"version:{mgr_module}.{new_class}", "value": "1.0.0"},
+            {"name": f"schema_digest:{mgr_module}.{new_class}", "value": digest},
+        ],
+    )
 
     # the change also affects schema digest for one other manager, recalculate
     # digest for MonolithicDatastoreRegistryBridgeManager from new table schema
@@ -583,9 +607,9 @@ def _update_butler_attributes(metadata: sa.schema.MetaData) -> None:
     ]
     digest = get_digest(tables, bind.dialect, nullable_columns={"dataset_id"})
     _LOG.debug("new schema digest for bridge manager: %s", digest)
-    sql = butler_attributes.update().values(
-        value=digest
-    ).where(
-        butler_attributes.columns.name == f"schema_digest:{manager}"
+    sql = (
+        butler_attributes.update()
+        .values(value=digest)
+        .where(butler_attributes.columns.name == f"schema_digest:{manager}")
     )
     bind.execute(sql)
