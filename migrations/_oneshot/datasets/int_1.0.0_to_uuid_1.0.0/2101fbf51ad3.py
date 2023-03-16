@@ -240,6 +240,8 @@ def _fill_id_map(metadata: sa.schema.MetaData) -> None:
     """Fill mapping table generating UUIDs according to policies."""
     table = _get_table(metadata, ID_MAP_TABLE_NAME)
 
+    dialect = op.get_bind().dialect
+
     start_time = time.time()
     count = 0
     batch: List[Dict[str, Any]] = []
@@ -247,7 +249,11 @@ def _fill_id_map(metadata: sa.schema.MetaData) -> None:
         dataset_uuid = _makeDatasetId(run_name, dstype_name, dataId)
         # _LOG.debug("dataset_id: %r, run_name: %r, dstype_name: %r , dataId: %r, dataset_uuid: %r",
         #            dataset_id, run_name, dstype_name, dataId, str(dataset_uuid))
-        batch.append({"id": dataset_id, "uuid": str(dataset_uuid)})
+        if dialect.name == "sqlite":
+            uuid_str = dataset_uuid.hex
+        else:
+            uuid_str = str(dataset_uuid)
+        batch.append({"id": dataset_id, "uuid": uuid_str})
 
         if len(batch) >= 10000:
             op.bulk_insert(table, batch, multiinsert=True)
