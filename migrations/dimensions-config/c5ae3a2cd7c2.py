@@ -35,7 +35,6 @@ def downgrade() -> None:
 
 
 def _migrate(old_version: int, new_version: int, column_size: int) -> None:
-
     mig_context = context.get_context()
 
     # When we use schemas in postgres then all tables belong to the same schema
@@ -59,13 +58,13 @@ def _migrate(old_version: int, new_version: int, column_size: int) -> None:
         return config
 
     # Update attributes
+    assert mig_context.bind is not None
     attributes = ButlerAttributes(mig_context.bind, schema)
     attributes.update_dimensions_json(_update_config)
 
     # Update actual schema
     for table_name in ("visit", "exposure"):
         with op.batch_alter_table(table_name, schema=schema) as batch_op:
-
             # change column type
             column = "observation_reason"
             column_type = sa.String(column_size)

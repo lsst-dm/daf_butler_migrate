@@ -23,8 +23,9 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
-from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Tuple
+from typing import cast
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
@@ -64,7 +65,7 @@ class Database:
     obscore_config_manager = "obscore-config"
     """Name of the special obscore-config pseudo-manager (`str`)"""
 
-    def __init__(self, db_url: sqlalchemy.engine.url.URL, schema: Optional[str] = None):
+    def __init__(self, db_url: sqlalchemy.engine.url.URL, schema: str | None = None):
         self._db_url = db_url
         self._schema = schema
 
@@ -94,7 +95,7 @@ class Database:
         return str(self._db_url)
 
     @property
-    def schema(self) -> Optional[str]:
+    def schema(self) -> str | None:
         """Schema (namespace) name (`str`)"""
         return self._schema
 
@@ -105,7 +106,7 @@ class Database:
         with engine.connect() as connection:
             yield connection
 
-    def dimensions_namespace(self) -> Optional[str]:
+    def dimensions_namespace(self) -> str | None:
         """Return dimensions namespace from a stored configuration.
 
         Returns
@@ -132,7 +133,7 @@ class Database:
             dimensions_json = json.loads(row[0])
             return dimensions_json.get("namespace")
 
-    def manager_versions(self, namespace: Optional[str] = None) -> Mapping[str, Tuple[str, str, str]]:
+    def manager_versions(self, namespace: str | None = None) -> Mapping[str, tuple[str, str, str]]:
         """Retrieve current manager versions stored in butler_attributes table.
 
         Parameters
@@ -159,9 +160,9 @@ class Database:
         )
 
         # parse table contents into two separate maps
-        managers: Dict[str, str] = {}
-        versions: Dict[str, str] = {}
-        sql = sqlalchemy.sql.select([table.columns.name, table.columns.value])
+        managers: dict[str, str] = {}
+        versions: dict[str, str] = {}
+        sql = sqlalchemy.sql.select(table.columns.name, table.columns.value)
         with engine.connect() as connection:
             result = connection.execute(sql)
             for name, value in result:
@@ -188,7 +189,7 @@ class Database:
                     versions[namespace] = str(obscore_json["version"])
 
         # combine them into one structure
-        revisions: Dict[str, Tuple[str, str, str]] = {}
+        revisions: dict[str, tuple[str, str, str]] = {}
         for manager, klass in managers.items():
             version = versions.get(klass)
             if version:
@@ -200,7 +201,7 @@ class Database:
 
         return revisions
 
-    def alembic_revisions(self) -> List[str]:
+    def alembic_revisions(self) -> list[str]:
         """Return a list of current revision numbers from database
 
         Returns
@@ -217,7 +218,7 @@ class Database:
             return list(ctx.get_current_heads())
 
     def validate_revisions(
-        self, namespace: Optional[str] = None, base_revisions: Iterable[str] | None = None
+        self, namespace: str | None = None, base_revisions: Iterable[str] | None = None
     ) -> None:
         """Verify consistency of alembic revisions and butler versions.
 
@@ -252,7 +253,7 @@ class Database:
             raise RevisionConsistencyError("butler_attributes table is empty")
 
         alembic_revs = set(alembic_revisions)
-        manager_revs: Dict[str, Tuple[str, str, str]] = {}
+        manager_revs: dict[str, tuple[str, str, str]] = {}
         for manager, (klass, version, rev_id) in sorted(manager_versions.items()):
             manager_revs[rev_id] = (manager, klass, version)
         manager_revs_set = set(manager_revs.keys())
@@ -275,7 +276,7 @@ class Database:
                     msg += f" {rev}={manager_revs[rev]}"
             raise RevisionConsistencyError(msg)
 
-    def dump_schema(self, tables: Optional[List[str]]) -> None:
+    def dump_schema(self, tables: list[str] | None) -> None:
         """Dump the schema of the registry database.
 
         Parameters
@@ -296,9 +297,9 @@ class Database:
 
             print(f"table={table}")
 
-            columns = inspector.get_columns(table, schema=self._schema)
-            columns.sort(key=lambda c: c["name"])
-            for col in columns:
+            column_list = inspector.get_columns(table, schema=self._schema)
+            column_list.sort(key=lambda c: c["name"])
+            for col in column_list:
                 print(
                     f"  column={col['name']} type={col['type']} nullable={col['nullable']}"
                     f" default={col['default']} [table={table}]"
@@ -310,13 +311,13 @@ class Database:
                 print(f"  PK name={pk['name']} columns=({columns}) [table={table}]")
 
             uniques = inspector.get_unique_constraints(table, schema=self._schema)
-            uniques.sort(key=lambda uq: uq["name"])
+            uniques.sort(key=lambda uq: cast(str, uq["name"]))
             for uq in uniques:
                 columns = ",".join(uq["column_names"])
                 print(f"  UNIQUE name={uq['name']} columns=({columns}) [table={table}]")
 
             fks = inspector.get_foreign_keys(table, schema=self._schema)
-            fks.sort(key=lambda fk: fk["name"])
+            fks.sort(key=lambda fk: cast(str, fk["name"]))
             for fk in fks:
                 columns = ",".join(fk["constrained_columns"])
                 ref_columns = ",".join(fk["referred_columns"])
@@ -326,14 +327,14 @@ class Database:
                 )
 
             checks = inspector.get_check_constraints(table, schema=self._schema)
-            checks.sort(key=lambda chk: chk["name"])
+            checks.sort(key=lambda chk: cast(str, chk["name"]))
             for check in checks:
                 print(f"  CHECK name={check['name']} sqltext={check['sqltext']} [table={table}]")
 
             indices = inspector.get_indexes(table, schema=self._schema)
-            indices.sort(key=lambda idx: idx["name"])
+            indices.sort(key=lambda idx: cast(str, idx["name"]))
             for idx in indices:
-                columns = ",".join(idx["column_names"])
+                columns = ",".join(cast(list[str], idx["column_names"]))
                 print(
                     f"  INDEX name={idx['name']} columns=({columns}) unique={idx['unique']} [table={table}]"
                 )

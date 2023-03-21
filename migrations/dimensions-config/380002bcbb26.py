@@ -59,12 +59,12 @@ def downgrade() -> None:
 
 
 def _migrate(update_config: Callable[[Dict], Dict]) -> None:
-
     mig_context = context.get_context()
 
     # When we use schemas in postgres then all tables belong to the same schema
     # so we can use alembic's version_table_schema to see where everything goes
     schema = mig_context.version_table_schema
 
+    assert mig_context.bind is not None
     attributes = ButlerAttributes(mig_context.bind, schema)
     attributes.update_dimensions_json(update_config)

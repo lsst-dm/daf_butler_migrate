@@ -40,7 +40,7 @@ class ButlerAttributes:
 
     def __init__(self, connection: sqlalchemy.engine.Connection, schema: Optional[str] = None):
         self._connection = connection
-        metadata = sqlalchemy.schema.MetaData(connection, schema=schema)
+        metadata = sqlalchemy.schema.MetaData(schema=schema)
         self._table = sqlalchemy.schema.Table(
             "butler_attributes", metadata, autoload_with=connection, schema=schema
         )
