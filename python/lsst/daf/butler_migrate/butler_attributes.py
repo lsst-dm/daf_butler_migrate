@@ -22,7 +22,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable, Iterable
+from typing import Any, cast
 
 import sqlalchemy
 
@@ -38,14 +39,14 @@ class ButlerAttributes:
         Schema name or `None`.
     """
 
-    def __init__(self, connection: sqlalchemy.engine.Connection, schema: Optional[str] = None):
+    def __init__(self, connection: sqlalchemy.engine.Connection, schema: str | None = None):
         self._connection = connection
         metadata = sqlalchemy.schema.MetaData(schema=schema)
         self._table = sqlalchemy.schema.Table(
             "butler_attributes", metadata, autoload_with=connection, schema=schema
         )
 
-    def get(self, name: str) -> Optional[str]:
+    def get(self, name: str) -> str | None:
         """Retrieve values of the named attribute.
 
         Parameters
@@ -62,6 +63,19 @@ class ButlerAttributes:
         result = self._connection.execute(sql)
         row = result.fetchone()
         return row[0] if row is not None else None
+
+    def items(self) -> Iterable[tuple[str, str]]:
+        """Retrieve all records from attributes table.
+
+        Returns
+        -------
+        records : `Iterable`[`tuple`[`str`, `str`]]
+            Sequence of tuples, each tuple contains attribute name and its
+            value.
+        """
+        sql = sqlalchemy.sql.select(self._table.columns.name, self._table.columns.value)
+        result = self._connection.execute(sql)
+        return [cast(tuple[str, str], row) for row in result.fetchall()]
 
     def insert(self, name: str, value: str) -> None:
         """Insert new parameter in butler_attributes table.
@@ -96,18 +110,24 @@ class ButlerAttributes:
         sql = self._table.update().where(self._table.columns.name == name).values(value=value)
         return self._connection.execute(sql).rowcount
 
-    def delete(self, name: str) -> None:
+    def delete(self, name: str) -> int:
         """Delete parameter from butler_attributes table.
 
         Parameters
         ----------
         name : `str`
             Attribute name.
+
+        Returns
+        -------
+        count : `int`
+            Number of deleted rows, 0 if no matching attribute found, 1
+            otherwise.
         """
         sql = self._table.delete().where(self._table.columns.name == name)
-        self._connection.execute(sql)
+        return self._connection.execute(sql).rowcount
 
-    def get_dimensions_json(self) -> Dict[str, Any]:
+    def get_dimensions_json(self) -> dict[str, Any]:
         """Return dimensions configuration from dimensions.json.
 
         Returns
@@ -122,7 +142,7 @@ class ButlerAttributes:
         config = json.loads(config_json)
         return config
 
-    def update_dimensions_json(self, update_config: Callable[[Dict], Dict]) -> None:
+    def update_dimensions_json(self, update_config: Callable[[dict], dict]) -> None:
         """Updates dimensions definitions in dimensions.json.
 
         Parameters
