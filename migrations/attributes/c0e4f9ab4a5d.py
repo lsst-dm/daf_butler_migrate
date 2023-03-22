@@ -25,13 +25,13 @@ MANAGER = "lsst.daf.butler.registry.attributes.DefaultButlerAttributeManager"
 def upgrade() -> None:
     """Upgrade from version 1.0.0 to version 1.0.1.
 
-    Tehre is no actual schema change, only contents of butler_attributes
+    There is no actual schema change, only contents of the butler_attributes
     table is updated by removing schema digests for all managers.
     """
     mig_context = context.get_context()
 
     # When we use schemas in postgres then all tables belong to the same schema
-    # so we can use alembic's version_table_schema to see where everything goes
+    # so we can use alembic's version_table_schema to see where everything goes.
     schema = mig_context.version_table_schema
 
     assert mig_context.bind is not None
