@@ -28,15 +28,7 @@ import tempfile
 from collections import defaultdict
 from typing import Dict
 
-from lsst.daf.butler import (
-    Butler,
-    Config,
-    DatasetAssociation,
-    DatasetId,
-    DatasetIdGenEnum,
-    DatasetRef,
-    SkyPixDimension,
-)
+from lsst.daf.butler import Butler, Config, DatasetAssociation, DatasetId, DatasetRef, SkyPixDimension
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
 from lsst.daf.butler.registries.sql import SqlRegistry
 from lsst.daf.butler.registry import CollectionType
@@ -191,9 +183,7 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
     # If this is int to UUID we force "raw" to generate reproductible UUID.
     # If other raw-type datasets are to be supported the command will have
     # to take an additional parameter.
-    dest_refs = dest_butler.transfer_from(
-        source_butler, source_refs, skip_missing=False, id_gen_map={"raw": DatasetIdGenEnum.DATAID_TYPE_RUN}
-    )
+    dest_refs = dest_butler.transfer_from(source_butler, source_refs, skip_missing=False)
 
     # Map source ID to destination ID.
     source_to_dest = {source.getCheckedId(): dest for source, dest in zip(source_refs, dest_refs)}
