@@ -83,8 +83,7 @@ def _do_migration(nullable: bool, manager_version: str) -> None:
                         _LOG.info("Add NOT NULL to column %s.%s", element_name, other_element)
                     batch_op.alter_column(other_element, nullable=nullable)  # type: ignore[attr-defined]
 
-    count = attributes.update(f"version:{MANAGER}", manager_version)
-    assert count == 1, "expected to update single row"
+    attributes.update_manager_version(MANAGER, manager_version)
 
 
 def _check_visit_null_filter() -> None:
