@@ -54,7 +54,7 @@ def upgrade() -> None:
     """
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
-        # Keep it at miscrosecond resolution
+        # Keep it at microsecond resolution
         _migrate_pg(
             sa.BIGINT, None, "CAST(EXTRACT(EPOCH FROM ingest_date) * 1000000 AS BIGINT) * 1000", "2.0.0"
         )
