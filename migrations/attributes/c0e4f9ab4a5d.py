@@ -56,8 +56,7 @@ def upgrade() -> None:
     count = sum(1 for key, _ in attributes.items() if key.startswith("schema_digest:"))
     _LOG.info("number of schema digests in table after migration: %s", count)
 
-    count = attributes.update(f"version:{MANAGER}", "1.0.1")
-    assert count == 1, "expected to update single row"
+    attributes.update_manager_version(MANAGER, "1.0.1")
 
 
 def downgrade() -> None:

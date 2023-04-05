@@ -21,6 +21,7 @@ Database migrations are defined as scripts executed by these tools, this package
    command-line.rst
    migration-scripts.rst
    typical-tasks.rst
+   common-migrations.rst
 
 Migrations catalog
 ==================

@@ -110,6 +110,26 @@ class ButlerAttributes:
         sql = self._table.update().where(self._table.columns.name == name).values(value=value)
         return self._connection.execute(sql).rowcount
 
+    def update_manager_version(self, manager: str, version: str) -> None:
+        """Convenience method for updating version for the specified manager.
+
+        Parameters
+        ----------
+        manager : `str`
+            Manager name.
+        value : `str`
+            New version string.
+
+        Raises
+        ------
+        LookupError
+            Raised if manager is not found in the table.
+        """
+        manager_key = f"version:{manager}"
+        count = self.update(manager_key, version)
+        if count != 1:
+            raise LookupError(f"Manager key {manager_key} is not found in butler_attributes table.")
+
     def delete(self, name: str) -> int:
         """Delete parameter from butler_attributes table.
 
