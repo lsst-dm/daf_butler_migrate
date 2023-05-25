@@ -35,6 +35,7 @@ from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
 from lsst.daf.butler.transfers import RepoExportContext
 from lsst.resources import ResourcePath
+from lsst.utils.ellipsis import Ellipsis
 from lsst.utils.introspection import get_class_of
 
 log = logging.getLogger(__name__)
@@ -175,7 +176,7 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
     # Read all the datasets we are going to transfer, removing duplicates.
     # This set could be extremely large.  For now assume this is a small
     # to medium-sized registry.
-    source_refs = set(source_butler.registry.queryDatasets(..., collections=...))
+    source_refs = set(source_butler.registry.queryDatasets(..., collections=Ellipsis))
 
     # Import the data to the new butler
     transfer_non_datasets(source_butler, dest_butler)
@@ -186,7 +187,7 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
     dest_refs = dest_butler.transfer_from(source_butler, source_refs, skip_missing=False)
 
     # Map source ID to destination ID.
-    source_to_dest = {source.getCheckedId(): dest for source, dest in zip(source_refs, dest_refs)}
+    source_to_dest = {source.id: dest for source, dest in zip(source_refs, dest_refs)}
 
     # Create any dataset associations
     create_associations(source_butler, dest_butler, source_to_dest)
@@ -206,13 +207,13 @@ def create_associations(
             collectionTypes.add(CollectionType.CALIBRATION)
         type_associations = source_butler.registry.queryDatasetAssociations(
             datasetType,
-            collections=...,
+            collections=Ellipsis,
             collectionTypes=collectionTypes,
             flattenChains=False,
         )
         for association in type_associations:
             dest_association = DatasetAssociation(
-                ref=source_to_dest[association.ref.getCheckedId()],
+                ref=source_to_dest[association.ref.id],
                 collection=association.collection,
                 timespan=association.timespan,
             )
@@ -280,4 +281,4 @@ def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
     yamlBuffer.seek(0)
 
     # Import the buffer.
-    dest_butler.import_(filename=yamlBuffer, format="yaml", reuseIds=True)
+    dest_butler.import_(filename=yamlBuffer, format="yaml")
