@@ -35,7 +35,6 @@ from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
 from lsst.daf.butler.transfers import RepoExportContext
 from lsst.resources import ResourcePath
-from lsst.utils.ellipsis import Ellipsis
 from lsst.utils.introspection import get_class_of
 
 log = logging.getLogger(__name__)
@@ -176,7 +175,7 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
     # Read all the datasets we are going to transfer, removing duplicates.
     # This set could be extremely large.  For now assume this is a small
     # to medium-sized registry.
-    source_refs = set(source_butler.registry.queryDatasets(..., collections=Ellipsis))
+    source_refs = set(source_butler.registry.queryDatasets(..., collections=...))
 
     # Import the data to the new butler
     transfer_non_datasets(source_butler, dest_butler)
@@ -207,7 +206,7 @@ def create_associations(
             collectionTypes.add(CollectionType.CALIBRATION)
         type_associations = source_butler.registry.queryDatasetAssociations(
             datasetType,
-            collections=Ellipsis,
+            collections=...,
             collectionTypes=collectionTypes,
             flattenChains=False,
         )
