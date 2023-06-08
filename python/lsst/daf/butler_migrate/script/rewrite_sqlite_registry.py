@@ -116,7 +116,7 @@ def rewrite_sqlite_registry(source: str) -> None:
         dest_config = Butler.makeRepo(
             dest_dir,
             config,
-            dimensionConfig=source_butler.registry.dimensions.dimensionConfig,
+            dimensionConfig=source_butler.dimensions.dimensionConfig,
             forceConfigRoot=False,
         )
 
@@ -265,7 +265,7 @@ def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
         exporter.saveCollection(c)
 
     # Export all the dimensions.
-    for dimension in source_butler.registry.dimensions.getStaticElements():
+    for dimension in source_butler.dimensions.getStaticElements():
         # Skip dimensions that are entirely derivable from other
         # dimensions or are sky pixelization.
         # eg "band" is always knowable from a "physical_filter".
