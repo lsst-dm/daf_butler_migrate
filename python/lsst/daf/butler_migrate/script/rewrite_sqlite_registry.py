@@ -168,9 +168,9 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
 
     Parameters
     ----------
-    source_butler : `Butler`
+    source_butler : `~lsst.daf.butler.Butler`
         Butler to use as a source of information.
-    dest_butler : `Butler`
+    dest_butler : `~lsst.daf.butler.Butler`
         Butler to receive all the content.
     """
     # Read all the datasets we are going to transfer, removing duplicates.
@@ -243,9 +243,9 @@ def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
 
     Parameters
     ----------
-    source_butler : `Butler`
+    source_butler : `~lsst.daf.butler.Butler`
         Butler to extract information from.
-    dest_butler : `Butler`
+    dest_butler : `~lsst.daf.butler.Butler`
         Destination butler.
     """
     # Use a string buffer to save on file I/O.  This might result in twice
