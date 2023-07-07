@@ -22,14 +22,13 @@
 from __future__ import annotations
 
 import logging
-from typing import List
 
 from .. import database
 
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_dump_schema(repo: str, table: List[str]) -> None:
+def migrate_dump_schema(repo: str, table: list[str]) -> None:
     """Dump the schema of the registry database.
 
     Parameters

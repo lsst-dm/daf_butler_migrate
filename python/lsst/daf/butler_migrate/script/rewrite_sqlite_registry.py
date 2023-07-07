@@ -26,7 +26,6 @@ import logging
 import os
 import tempfile
 from collections import defaultdict
-from typing import Dict
 
 from lsst.daf.butler import Butler, Config, DatasetAssociation, DatasetId, DatasetRef, SkyPixDimension
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
@@ -194,7 +193,7 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
 
 
 def create_associations(
-    source_butler: Butler, dest_butler: Butler, source_to_dest: Dict[DatasetId, DatasetRef]
+    source_butler: Butler, dest_butler: Butler, source_to_dest: dict[DatasetId, DatasetRef]
 ) -> None:
     """Create TAGGED and CALIBRATION collections in destination."""
     # For every dataset type in destination, get TAGGED and CALIBRATION

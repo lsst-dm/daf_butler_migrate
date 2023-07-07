@@ -22,7 +22,6 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Optional
 
 
 class MigrationTrees:
@@ -44,7 +43,7 @@ class MigrationTrees:
     """Name of envvar for location of a package containing default migrations.
     """
 
-    def __init__(self, mig_path: Optional[str] = None):
+    def __init__(self, mig_path: str | None = None):
         if mig_path is None:
             self.mig_path = self.migrations_folder()
         else:
@@ -139,7 +138,7 @@ class MigrationTrees:
             path = os.path.join(self.mig_path, path)
         return path
 
-    def regular_version_locations(self, *, relative: bool = True) -> Dict[str, str]:
+    def regular_version_locations(self, *, relative: bool = True) -> dict[str, str]:
         """Return locations for regular migrations.
 
         Parameters
@@ -154,7 +153,7 @@ class MigrationTrees:
             Dictionary where key is a manager name (e.g. "datasets") and value
             is the location of a folder with migration scripts.
         """
-        locations: Dict[str, str] = {}
+        locations: dict[str, str] = {}
         for entry in os.scandir(self.mig_path):
             if entry.is_dir() and entry.name not in ("_alembic", "_oneshot"):
                 path = entry.name
@@ -163,7 +162,7 @@ class MigrationTrees:
                 locations[entry.name] = path
         return locations
 
-    def one_shot_locations(self, manager: Optional[str] = None, *, relative: bool = True) -> Dict[str, str]:
+    def one_shot_locations(self, manager: str | None = None, *, relative: bool = True) -> dict[str, str]:
         """Return locations for one-shot migrations for specific manager.
 
         Parameters
@@ -180,7 +179,7 @@ class MigrationTrees:
             Dictionary where key is a one-shot tree name and value is the
             location of a folder with migration scripts.
         """
-        locations: Dict[str, str] = {}
+        locations: dict[str, str] = {}
 
         one_shot_loc = os.path.join(self.mig_path, "_oneshot")
         if not os.access(one_shot_loc, os.F_OK):
@@ -205,7 +204,7 @@ class MigrationTrees:
                     locations[manager + "/" + entry.name] = path
         return locations
 
-    def version_locations(self, one_shot_tree: Optional[str] = None, *, relative: bool = True) -> List[str]:
+    def version_locations(self, one_shot_tree: str | None = None, *, relative: bool = True) -> list[str]:
         """Return list of folders for version_locations.
 
         Parameters

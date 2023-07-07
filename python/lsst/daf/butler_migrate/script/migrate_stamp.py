@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
 
 from alembic import command
 
@@ -35,7 +34,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def migrate_stamp(
-    repo: str, mig_path: str, purge: bool, dry_run: bool, namespace: Optional[str], manager: Optional[str]
+    repo: str, mig_path: str, purge: bool, dry_run: bool, namespace: str | None, manager: str | None
 ) -> None:
     """Stamp alembic revision table with current registry versions.
 
@@ -66,7 +65,7 @@ def migrate_stamp(
 
     manager_versions = db.manager_versions(namespace)
 
-    revisions: Dict[str, str] = {}
+    revisions: dict[str, str] = {}
     for mgr_name, (klass, version, rev_id) in manager_versions.items():
         _LOG.debug("found revision (%s, %s, %s) -> %s", mgr_name, klass, version, rev_id)
         revisions[mgr_name] = rev_id

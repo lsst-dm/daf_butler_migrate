@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
 
 from alembic import command
 
@@ -40,8 +39,8 @@ def migrate_upgrade(
     mig_path: str,
     one_shot_tree: str,
     sql: bool,
-    namespace: Optional[str],
-    options: Optional[Dict[str, str]],
+    namespace: str | None,
+    options: dict[str, str] | None,
 ) -> None:
     """Upgrade schema to a specified revision.
 
@@ -77,7 +76,7 @@ def migrate_upgrade(
             "Alembic version table does not exist, you may need to run `butler migrate stamp` first."
         )
 
-    one_shot_arg: Optional[str] = None
+    one_shot_arg: str | None = None
     if one_shot_tree:
         one_shot_arg = one_shot_tree
     cfg = config.MigAlembicConfig.from_mig_path(
