@@ -88,22 +88,24 @@ def rewrite_sqlite_registry(source: str) -> None:
     # Force the new temporary butler repo to have an explicit path
     # to the existing datastore.  This will only work for a FileDatastore
     # so try that and if it doesn't work warn but continue since either
-    # this is a new typo of datastore or a chained datastore of some kind.
+    # this is a new type of datastore or a chained datastore of some kind.
     # For now only handle the simple case.
     # NOTE: Execution Butler creation has a similar problem with working
     # out how to refer back to the original datastore.
-    if isinstance(source_butler.datastore, FileDatastore):
-        config["datastore", "root"] = str(source_butler.datastore.root)
+    if isinstance(source_butler._datastore, FileDatastore):
+        roots = source_butler.get_datastore_roots()
+        datastore_name, datastore_root = roots.popitem()
+        config["datastore", "root"] = str(datastore_root)
 
         # Force the name of the datastore since that should not
         # change from the source (and will if set from root)
-        config["datastore", "name"] = source_butler.datastore.name
+        config["datastore", "name"] = datastore_name
     else:
         log.warning(
             "Migration is designed for FileDatastore but encountered %s."
             " Attempting migration anyhow. It should work so long as <butlerRoot> is not used"
             " in config.",
-            str(type(source_butler.datastore)),
+            str(type(source_butler._datastore)),
         )
 
     # Create a temp directory for the temporary butler (put it inside
