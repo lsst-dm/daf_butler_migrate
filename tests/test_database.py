@@ -101,7 +101,6 @@ class DatabaseTestCase(unittest.TestCase):
 
     def test_manager_versions(self) -> None:
         """Test for manager_versions() method"""
-
         with make_revision_tables() as db_url:
             db = database.Database(db_url)
             manager_versions = db.manager_versions()
@@ -119,7 +118,6 @@ class DatabaseTestCase(unittest.TestCase):
 
     def test_alembic_revisions(self) -> None:
         """Test for alembic_revisions() method"""
-
         with make_revision_tables() as db_url:
             db = database.Database(db_url)
             alembic_revisions = db.alembic_revisions()
@@ -133,7 +131,6 @@ class DatabaseTestCase(unittest.TestCase):
 
     def test_validate_revisions(self) -> None:
         """Test for validate_revisions() method"""
-
         with make_revision_tables() as db_url:
             db = database.Database(db_url)
             db.validate_revisions()

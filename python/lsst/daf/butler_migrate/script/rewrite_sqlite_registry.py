@@ -55,7 +55,6 @@ def rewrite_sqlite_registry(source: str) -> None:
     source : `str`
         URI to a SQLite butler repository.
     """
-
     # Create the source butler early so we can ask it questions
     # without assuming things.
     source_butler = Butler(source, writeable=False)

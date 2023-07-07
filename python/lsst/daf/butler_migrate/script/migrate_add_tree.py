@@ -64,7 +64,6 @@ def migrate_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
     all trees the root of the tree is labelled with the manager name (e.g.
     "datasets").
     """
-
     trees = migrate.MigrationTrees(mig_path)
 
     manager = tree_name
