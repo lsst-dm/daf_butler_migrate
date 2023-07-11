@@ -63,7 +63,6 @@ class MigrateTestCase(unittest.TestCase):
 
     def test_MigrationTrees(self) -> None:
         """Test for MigrationTrees methods"""
-
         with make_migrations() as mig_path:
             mtrees = migrate.MigrationTrees(mig_path)
 

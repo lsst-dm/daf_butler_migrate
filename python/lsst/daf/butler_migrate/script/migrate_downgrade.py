@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from alembic import command
 
@@ -35,7 +34,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def migrate_downgrade(
-    repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool, namespace: Optional[str]
+    repo: str, revision: str, mig_path: str, one_shot_tree: str, sql: bool, namespace: str | None
 ) -> None:
     """Downgrade schema to a specified revision.
 
@@ -71,7 +70,7 @@ def migrate_downgrade(
             "Alembic version table does not exist, you may need to run `butler migrate stamp` first."
         )
 
-    one_shot_arg: Optional[str] = None
+    one_shot_arg: str | None = None
     if one_shot_tree:
         one_shot_arg = one_shot_tree
     cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db, one_shot_tree=one_shot_arg)

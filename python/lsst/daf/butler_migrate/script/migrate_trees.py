@@ -24,8 +24,6 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 from alembic.script import Script, ScriptDirectory
 
 from .. import config, migrate
@@ -51,7 +49,7 @@ def migrate_trees(mig_path: str, verbose: bool, one_shot: bool) -> None:
     scripts = ScriptDirectory.from_config(cfg)
     bases = scripts.get_bases()
 
-    bases_map: Dict[str, Script] = {}
+    bases_map: dict[str, Script] = {}
     for name in bases:
         revision = scripts.get_revision(name)
         assert revision is not None, "Script for a known base must exist"

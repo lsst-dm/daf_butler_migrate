@@ -30,7 +30,6 @@ class DigestsTestCase(unittest.TestCase):
 
     def test_tableSchemaRepr(self) -> None:
         """Test for _tableSchemaRepr method"""
-
         engine = sqlalchemy.create_engine("sqlite://")
 
         mdata = sqlalchemy.schema.MetaData()
@@ -58,7 +57,6 @@ class DigestsTestCase(unittest.TestCase):
         """Test for _tableSchemaRepr method in case when PK is declared
         nullable.
         """
-
         engine = sqlalchemy.create_engine("sqlite://")
 
         # sqlalchemy allows nullable PK columns in table definition

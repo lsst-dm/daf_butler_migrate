@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from alembic import command, util
 from alembic.script import ScriptDirectory
@@ -89,7 +88,7 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str, version:
     # New revision should be either at the head of manager branch or at the
     # root of the tree (to make a new manager branch).
     manager_branch = f"{tree_name}-{manager_class}"
-    branch_label: Optional[str] = None
+    branch_label: str | None = None
     splice = False
     if _revision_exists(scripts, manager_branch):
         head = f"{manager_branch}@head"

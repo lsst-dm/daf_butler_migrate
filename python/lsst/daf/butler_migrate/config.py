@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 from alembic.config import Config
 
@@ -42,11 +42,11 @@ class MigAlembicConfig(Config):
         cls,
         mig_path: str,
         *args: Any,
-        repository: Optional[str] = None,
-        db: Optional[database.Database] = None,
-        single_tree: Optional[str] = None,
-        one_shot_tree: Optional[str] = None,
-        migration_options: Optional[Dict[str, str]] = None,
+        repository: str | None = None,
+        db: database.Database | None = None,
+        single_tree: str | None = None,
+        one_shot_tree: str | None = None,
+        migration_options: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> MigAlembicConfig:
         """Create new configuration object.

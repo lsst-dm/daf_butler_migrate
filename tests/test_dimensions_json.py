@@ -65,7 +65,7 @@ class DimensionsJsonTestCase(unittest.TestCase):
 
     def load_data(self, registry: Registry, filename: str) -> None:
         """Load registry test data from filename in data folder."""
-        with open(os.path.join(TESTDIR, "data", filename), "r") as stream:
+        with open(os.path.join(TESTDIR, "data", filename)) as stream:
             backend = YamlRepoImportBackend(stream, registry)
         backend.register()
         backend.load(datastore=None)

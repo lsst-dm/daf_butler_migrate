@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from alembic import command
 
@@ -34,7 +33,7 @@ from .. import config, database, scripts
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, namespace: Optional[str]) -> None:
+def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, namespace: str | None) -> None:
     """Display current revisions for a database.
 
     Parameters

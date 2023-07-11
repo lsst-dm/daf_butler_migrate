@@ -26,7 +26,6 @@ import logging
 import os
 import tempfile
 from collections import defaultdict
-from typing import Dict
 
 from lsst.daf.butler import Butler, Config, DatasetAssociation, DatasetId, DatasetRef, SkyPixDimension
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
@@ -55,7 +54,6 @@ def rewrite_sqlite_registry(source: str) -> None:
     source : `str`
         URI to a SQLite butler repository.
     """
-
     # Create the source butler early so we can ask it questions
     # without assuming things.
     source_butler = Butler(source, writeable=False)
@@ -88,22 +86,24 @@ def rewrite_sqlite_registry(source: str) -> None:
     # Force the new temporary butler repo to have an explicit path
     # to the existing datastore.  This will only work for a FileDatastore
     # so try that and if it doesn't work warn but continue since either
-    # this is a new typo of datastore or a chained datastore of some kind.
+    # this is a new type of datastore or a chained datastore of some kind.
     # For now only handle the simple case.
     # NOTE: Execution Butler creation has a similar problem with working
     # out how to refer back to the original datastore.
-    if isinstance(source_butler.datastore, FileDatastore):
-        config["datastore", "root"] = str(source_butler.datastore.root)
+    if isinstance(source_butler._datastore, FileDatastore):
+        roots = source_butler.get_datastore_roots()
+        datastore_name, datastore_root = roots.popitem()
+        config["datastore", "root"] = str(datastore_root)
 
         # Force the name of the datastore since that should not
         # change from the source (and will if set from root)
-        config["datastore", "name"] = source_butler.datastore.name
+        config["datastore", "name"] = datastore_name
     else:
         log.warning(
             "Migration is designed for FileDatastore but encountered %s."
             " Attempting migration anyhow. It should work so long as <butlerRoot> is not used"
             " in config.",
-            str(type(source_butler.datastore)),
+            str(type(source_butler._datastore)),
         )
 
     # Create a temp directory for the temporary butler (put it inside
@@ -167,9 +167,9 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
 
     Parameters
     ----------
-    source_butler : `Butler`
+    source_butler : `~lsst.daf.butler.Butler`
         Butler to use as a source of information.
-    dest_butler : `Butler`
+    dest_butler : `~lsst.daf.butler.Butler`
         Butler to receive all the content.
     """
     # Read all the datasets we are going to transfer, removing duplicates.
@@ -193,7 +193,7 @@ def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
 
 
 def create_associations(
-    source_butler: Butler, dest_butler: Butler, source_to_dest: Dict[DatasetId, DatasetRef]
+    source_butler: Butler, dest_butler: Butler, source_to_dest: dict[DatasetId, DatasetRef]
 ) -> None:
     """Create TAGGED and CALIBRATION collections in destination."""
     # For every dataset type in destination, get TAGGED and CALIBRATION
@@ -242,9 +242,9 @@ def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
 
     Parameters
     ----------
-    source_butler : `Butler`
+    source_butler : `~lsst.daf.butler.Butler`
         Butler to extract information from.
-    dest_butler : `Butler`
+    dest_butler : `~lsst.daf.butler.Butler`
         Destination butler.
     """
     # Use a string buffer to save on file I/O.  This might result in twice

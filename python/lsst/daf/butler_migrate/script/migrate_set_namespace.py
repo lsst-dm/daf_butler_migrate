@@ -25,14 +25,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
 
 from .. import butler_attributes, database
 
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_set_namespace(repo: str, namespace: Optional[str], update: bool) -> None:
+def migrate_set_namespace(repo: str, namespace: str | None, update: bool) -> None:
     """Display current revisions for a database.
 
     Parameters
@@ -62,7 +61,7 @@ def migrate_set_namespace(repo: str, namespace: Optional[str], update: bool) -> 
                 f"Namespace is already defined ({db_namespace}), use --update option to replace it."
             )
 
-        def update_namespace(config: Dict) -> Dict:
+        def update_namespace(config: dict) -> dict:
             """Update namespace attribute"""
             config["namespace"] = namespace
             return config

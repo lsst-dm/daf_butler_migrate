@@ -111,7 +111,7 @@ class ButlerAttributes:
         return self._connection.execute(sql).rowcount
 
     def update_manager_version(self, manager: str, version: str) -> None:
-        """Convenience method for updating version for the specified manager.
+        """Update version for the specified manager.
 
         Parameters
         ----------
@@ -163,7 +163,7 @@ class ButlerAttributes:
         return config
 
     def update_dimensions_json(self, update_config: Callable[[dict], dict]) -> None:
-        """Updates dimensions definitions in dimensions.json.
+        """Update dimensions definitions in dimensions.json.
 
         Parameters
         ----------
