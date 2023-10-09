@@ -15,7 +15,7 @@ from typing import Any
 import sqlalchemy as sa
 from alembic import context, op
 from astropy.time import Time
-from lsst.daf.butler.core.time_utils import TimeConverter
+from lsst.daf.butler.time_utils import TimeConverter
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 
 # revision identifiers, used by Alembic.
