@@ -29,9 +29,9 @@ from collections import defaultdict
 
 from lsst.daf.butler import Butler, Config, DatasetAssociation, DatasetId, DatasetRef, SkyPixDimension
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
-from lsst.daf.butler.registries.sql import SqlRegistry
 from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
+from lsst.daf.butler.registry.sql_registry import SqlRegistry
 from lsst.daf.butler.transfers import RepoExportContext
 from lsst.resources import ResourcePath
 from lsst.utils.introspection import get_class_of
