@@ -29,6 +29,7 @@ from collections import defaultdict
 
 from lsst.daf.butler import Butler, Config, DatasetAssociation, DatasetId, DatasetRef, SkyPixDimension
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
+from lsst.daf.butler.direct_butler import DirectButler
 from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
 from lsst.daf.butler.registry.sql_registry import SqlRegistry
@@ -56,11 +57,12 @@ def rewrite_sqlite_registry(source: str) -> None:
     """
     # Create the source butler early so we can ask it questions
     # without assuming things.
-    source_butler = Butler(source, writeable=False)
-    assert isinstance(source_butler.registry, SqlRegistry), "Expecting SqlRegistry instance"
+    source_butler = Butler.from_config(source, writeable=False)
+    assert isinstance(source_butler, DirectButler)
+    assert isinstance(source_butler._registry, SqlRegistry), "Expecting SqlRegistry instance"
 
     # Check that we are really working with a SQLite database.
-    if not isinstance(source_butler.registry._db, SqliteDatabase):
+    if not isinstance(source_butler._registry._db, SqliteDatabase):
         raise RuntimeError("This command can only be used on SQLite registries.")
 
     # The source butler knows where its config came from.
@@ -120,15 +122,16 @@ def rewrite_sqlite_registry(source: str) -> None:
         )
 
         # Create destination butler
-        dest_butler = Butler(dest_config, writeable=True)
-        assert isinstance(dest_butler.registry, SqlRegistry), "Expecting SqlRegistry instance"
-        assert isinstance(dest_butler.registry._db, SqliteDatabase), "Expecting SqliteDatabase instance"
+        dest_butler = Butler.from_config(dest_config, writeable=True)
+        assert isinstance(dest_butler, DirectButler)
+        assert isinstance(dest_butler._registry, SqlRegistry), "Expecting SqlRegistry instance"
+        assert isinstance(dest_butler._registry._db, SqliteDatabase), "Expecting SqliteDatabase instance"
 
         transfer_everything(source_butler, dest_butler)
 
         # Obtain the name of the sqlite file at the destination.
-        assert dest_butler.registry._db.filename is not None, "Expecting non-None filename from registry"
-        dest_registry_uri = ResourcePath(dest_butler.registry._db.filename)
+        assert dest_butler._registry._db.filename is not None, "Expecting non-None filename from registry"
+        dest_registry_uri = ResourcePath(dest_butler._registry._db.filename)
 
         # Finished with writing to the destination butler so
         # delete the variable to ensure we can't do any more.
@@ -138,8 +141,8 @@ def rewrite_sqlite_registry(source: str) -> None:
         # and move the existing registry to a backup.
 
         # Relocate the source registry first
-        assert source_butler.registry._db.filename is not None, "Expecting non-None filename from registry"
-        source_registry_uri = ResourcePath(source_butler.registry._db.filename)
+        assert source_butler._registry._db.filename is not None, "Expecting non-None filename from registry"
+        source_registry_uri = ResourcePath(source_butler._registry._db.filename)
         new_basename = "original_" + source_registry_uri.basename()
         backup_registry_uri = source_registry_uri.updatedFile(new_basename)
         os.rename(source_registry_uri.ospath, backup_registry_uri.ospath)
@@ -160,16 +163,16 @@ def rewrite_sqlite_registry(source: str) -> None:
     print(f"Successfully rewrote registry for butler at {source_config_uri}")
 
 
-def transfer_everything(source_butler: Butler, dest_butler: Butler) -> None:
+def transfer_everything(source_butler: DirectButler, dest_butler: DirectButler) -> None:
     """Transfer all content from one butler to another butler.
 
     Assumes that both registries have a common dimension universe.
 
     Parameters
     ----------
-    source_butler : `~lsst.daf.butler.Butler`
+    source_butler : `~lsst.daf.butler.direct_butler.DirectButler`
         Butler to use as a source of information.
-    dest_butler : `~lsst.daf.butler.Butler`
+    dest_butler : `~lsst.daf.butler.direct_butler.DirectButler`
         Butler to receive all the content.
     """
     # Read all the datasets we are going to transfer, removing duplicates.
@@ -237,14 +240,14 @@ def create_associations(
             )
 
 
-def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
+def transfer_non_datasets(source_butler: DirectButler, dest_butler: DirectButler) -> None:
     """Transfer everything that isn't related to datasets.
 
     Parameters
     ----------
-    source_butler : `~lsst.daf.butler.Butler`
+    source_butler : `~lsst.daf.butler.direct_butler.DirectButler`
         Butler to extract information from.
-    dest_butler : `~lsst.daf.butler.Butler`
+    dest_butler : `~lsst.daf.butler.direct_butler.DirectButler`
         Destination butler.
     """
     # Use a string buffer to save on file I/O.  This might result in twice
@@ -256,7 +259,7 @@ def transfer_non_datasets(source_butler: Butler, dest_butler: Butler) -> None:
     BackendClass = get_class_of(source_butler._config["repo_transfer_formats", "yaml", "export"])
     backend = BackendClass(yamlBuffer)
     exporter = RepoExportContext(
-        source_butler.registry, source_butler.datastore, backend, directory=None, transfer=None
+        source_butler._registry, source_butler.datastore, backend, directory=None, transfer=None
     )
 
     # Export all the collections.
