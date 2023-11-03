@@ -21,10 +21,10 @@
 
 from __future__ import annotations
 
-from lsst.daf.butler import Registry
+from lsst.daf.butler.registry.sql_registry import SqlRegistry
 
 
-def make_registry(repository: str, writeable: bool = True) -> Registry:
+def make_registry(repository: str, writeable: bool = True) -> SqlRegistry:
     """Make Registry instance.
 
     Parameters
@@ -34,4 +34,4 @@ def make_registry(repository: str, writeable: bool = True) -> Registry:
     writeable : `bool`, optional
         If `True` (default) create a read-write connection to the database.
     """
-    return Registry.fromConfig(config=repository, writeable=writeable)
+    return SqlRegistry.fromConfig(config=repository, writeable=writeable)
