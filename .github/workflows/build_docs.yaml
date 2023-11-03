@@ -46,3 +46,11 @@ jobs:
           DAF_BUTLER_MIGRATE_MIGRATIONS: ./migrations
         working-directory: ./doc
         run: package-docs build -n -W
+
+      - name: Upload to LSST the Docs
+        uses: lsst-sqre/ltd-upload@v1
+        with:
+          project: 'daf-butler-migrate'
+          dir: 'doc/_build/html'
+          username: ${{ secrets.LTD_USERNAME }}
+          password: ${{ secrets.LTD_PASSWORD }}
