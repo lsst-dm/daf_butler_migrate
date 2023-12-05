@@ -7,6 +7,7 @@ Create Date: 2023-02-02 10:28:46.217250
 """
 
 import json
+from typing import TYPE_CHECKING
 
 import yaml
 from alembic import context, op
@@ -14,6 +15,9 @@ from lsst.daf.butler.registry.sql_registry import SqlRegistry
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 from lsst.daf.butler_migrate.registry import make_registry
 from lsst.utils import doImportType
+
+if TYPE_CHECKING:
+    from lsst.daf.butler.registry.obscore import ObsCoreLiveTableManager
 
 # revision identifiers, used by Alembic.
 revision = "4fe28ef5030f"
@@ -142,7 +146,7 @@ def _make_obscore_table(obscore_config: dict) -> None:
     manager_class_name = attributes.get("config:registry.managers.obscore")
     if manager_class_name is None:
         raise ValueError("Registry obscore manager has to be configured in butler_attributes")
-    manager_class = doImportType(manager_class_name)
+    manager_class: type[ObsCoreLiveTableManager] = doImportType(manager_class_name)
 
     repository = context.config.get_section_option("daf_butler_migrate", "repository")
     assert repository is not None, "Need repository in configuration"
@@ -154,7 +158,7 @@ def _make_obscore_table(obscore_config: dict) -> None:
     database = registry._db
     managers = registry._managers
     with database.declareStaticTables(create=False) as staticTablesContext:
-        manager = manager_class.initialize(
+        manager: ObsCoreLiveTableManager = manager_class.initialize(  # type: ignore[assignment]
             database,
             staticTablesContext,
             universe=registry.dimensions,

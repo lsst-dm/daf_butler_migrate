@@ -151,7 +151,7 @@ def upgrade() -> None:
 
     # drop mapping table
     _LOG.debug("Dropping mapping table")
-    op.drop_table(ID_MAP_TABLE_NAME, schema)
+    op.drop_table(ID_MAP_TABLE_NAME, schema=schema)
 
     # refresh schema from database
     metadata = sa.schema.MetaData(schema=schema)
