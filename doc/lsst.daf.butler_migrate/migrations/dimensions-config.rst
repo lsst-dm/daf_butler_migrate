@@ -53,3 +53,12 @@ daf_butler 2 to 3
 Migration script: `c5ae3a2cd7c2.py <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/c5ae3a2cd7c2.py>`_
 
 Changes the size of the ``observation_reason`` column in visit and exposure tables from 32 characters to 68.
+
+
+daf_butler 3 to 4
+=================
+
+Migration script: `9888256c6a18.py <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/9888256c6a18.py>`_
+
+Does not change the schema, only updates the contents of ``config:dimensions.json``.
+Three elements in dimensions configuration add ``populated_by: visit`` option.

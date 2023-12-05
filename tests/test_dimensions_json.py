@@ -22,7 +22,9 @@
 import os
 import unittest
 
-from lsst.daf.butler import Butler, Config, Registry
+from lsst.daf.butler import Butler, Config
+from lsst.daf.butler.direct_butler import DirectButler
+from lsst.daf.butler.registry.sql_registry import SqlRegistry
 from lsst.daf.butler.tests.utils import makeTestTempDir, removeTestTempDir
 from lsst.daf.butler.transfers import YamlRepoImportBackend
 from lsst.daf.butler_migrate import database, migrate, script
@@ -63,7 +65,7 @@ class DimensionsJsonTestCase(unittest.TestCase):
         self.db = database.Database.from_repo(self.root)
         return config
 
-    def load_data(self, registry: Registry, filename: str) -> None:
+    def load_data(self, registry: SqlRegistry, filename: str) -> None:
         """Load registry test data from filename in data folder."""
         with open(os.path.join(TESTDIR, "data", filename)) as stream:
             backend = YamlRepoImportBackend(stream, registry)
@@ -121,8 +123,9 @@ class DimensionsJsonTestCase(unittest.TestCase):
         versions = self.db.manager_versions(_NAMESPACE)
         self.assertEqual(versions["dimensions-config"], (_NAMESPACE, "0", _REVISION_V0))
 
-        butler = Butler(config, writeable=True)
-        self.load_data(butler.registry, "records.yaml")
+        butler = Butler.from_config(config, writeable=True)
+        assert isinstance(butler, DirectButler), "Only DirectButler is supported"
+        self.load_data(butler._registry, "records.yaml")
 
         # Check records for v0 attributes.
         records = list(butler.registry.queryDimensionRecords("visit"))
@@ -164,7 +167,7 @@ class DimensionsJsonTestCase(unittest.TestCase):
         versions = self.db.manager_versions()
         self.assertEqual(versions["dimensions-config"], (_NAMESPACE, "2", _REVISION_V2))
 
-        butler = Butler(config, writeable=False)
+        butler = Butler.from_config(config, writeable=False)
 
         # Check records for v2 attributes.
         records = list(butler.registry.queryDimensionRecords("instrument"))

@@ -122,8 +122,8 @@ def _migrate_default(
     # There may be very many records in dataset table to fit everything in
     # memory, so split the whole thing on dataset_type_id.
     query = sa.select(table.columns["dataset_type_id"]).select_from(table).distinct()
-    result = bind.execute(query).scalars()
-    dataset_type_ids = sorted(result)
+    scalars = bind.execute(query).scalars()
+    dataset_type_ids = sorted(scalars)
     _LOG.info("Found %s dataset types in dataset table", len(dataset_type_ids))
 
     for dataset_type_id in dataset_type_ids:
@@ -140,8 +140,8 @@ def _migrate_default(
         iterator = iter(rows)
         count = 0
         while chunk := list(itertools.islice(iterator, 1000)):
-            query = tmp_table.insert().values(chunk)
-            result = bind.execute(query)
+            insert = tmp_table.insert().values(chunk)
+            result = bind.execute(insert)
             count += result.rowcount
         _LOG.info("Inserted %s rows into temporary table", count)
 
@@ -156,12 +156,12 @@ def _migrate_default(
         )
 
     # Update ingest date from a temporary table.
-    query = table.update().values(
+    update = table.update().values(
         ingest_date=sa.select(tmp_table.columns["ingest_date"])
         .where(tmp_table.columns["id"] == table.columns["id"])
         .scalar_subquery()
     )
-    result = bind.execute(query)
+    result = bind.execute(update)
     _LOG.info("Updated %s rows in dataset table", result.rowcount)
 
     # Update manager schema version.
