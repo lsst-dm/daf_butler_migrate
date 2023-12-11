@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
 
 from alembic.config import Config
 
@@ -41,13 +40,12 @@ class MigAlembicConfig(Config):
     def from_mig_path(
         cls,
         mig_path: str,
-        *args: Any,
+        *,
         repository: str | None = None,
         db: database.Database | None = None,
         single_tree: str | None = None,
         one_shot_tree: str | None = None,
         migration_options: dict[str, str] | None = None,
-        **kwargs: Any,
     ) -> MigAlembicConfig:
         """Create new configuration object.
 
@@ -72,10 +70,10 @@ class MigAlembicConfig(Config):
             configuration object, in a section "daf_butler_migrate_options".
         """
         alembic_folder = os.path.join(mig_path, "_alembic")
-        ini_path = os.path.join(alembic_folder, "alembic.ini")
-        cfg = cls(ini_path, *args, **kwargs)
+        cfg = cls()
         cfg.set_main_option("script_location", alembic_folder)
-
+        cfg.set_section_option("alembic", "file_template", "%%(rev)s")
+        cfg.set_section_option("alembic", "prepend_sys_path", ".")
         _LOG.debug(
             "alembic_folder: %r, single_tree: %r, one_shot_tree: %r",
             alembic_folder,
@@ -94,9 +92,6 @@ class MigAlembicConfig(Config):
             version_locations = migrate_trees.version_locations(one_shot_tree, relative=False)
         _LOG.debug("version_locations: %r", version_locations)
         cfg.set_main_option("version_locations", " ".join(version_locations))
-
-        # override default file template
-        cfg.set_main_option("file_template", "%%(rev)s")
 
         # we do not use this option, this is just to make sure that
         # [daf_butler_migrate] section exists
