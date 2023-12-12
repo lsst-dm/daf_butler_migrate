@@ -12,6 +12,7 @@ from typing import NamedTuple
 import sqlalchemy
 from alembic import context, op
 from lsst.daf.butler_migrate import naming
+from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 
 # revision identifiers, used by Alembic.
 revision = "8c57494cabcc"
@@ -157,6 +158,9 @@ def upgrade() -> None:
         _make_fks(table_name, table_infos, schema=schema)
         _make_unique(table_name, table_infos[table_name], schema=schema)
         _make_indices(table_name, table_infos[table_name], schema=schema)
+
+    # update version in butler_attributes table
+    _update_butler_attributes(bind, schema)
 
 
 def _all_tables(schema: str) -> list[str]:
@@ -520,6 +524,26 @@ def _report_table_size(message: str, table: str, schema: str | None = None) -> N
         pp.pformat(indices_size),
         pp.pformat(total),
     )
+
+
+def _update_butler_attributes(bind: sqlalchemy.engine.Connection, schema: str | None) -> None:
+    """Update contents of butler_attributes with new version and digests."""
+    _LOG.info("Updating butler_attributes metadata")
+
+    mgr_module = "lsst.daf.butler.registry.collections"
+    old_class = "nameKey.NameKeyCollectionManager"
+    new_class = "synthIntKey.SynthIntKeyCollectionManager"
+
+    attributes = ButlerAttributes(bind, schema)
+
+    # Remove existing records for old manager.
+    attributes.delete(f"version:{mgr_module}.{old_class}")
+
+    # Update manager class name.
+    attributes.update("config:registry.managers.collections", f"{mgr_module}.{new_class}")
+
+    # Insert version for new manager.
+    attributes.insert(f"version:{mgr_module}.{new_class}", "2.0.0")
 
 
 def downgrade() -> None:
