@@ -6,6 +6,7 @@ Create Date: 2023-12-08 11:25:33.984476
 
 """
 import logging
+import pprint
 from typing import NamedTuple
 
 import sqlalchemy
@@ -259,12 +260,14 @@ def _make_pk(
     if columns is None:
         return
 
+    _report_table_size("before adding PK", table, schema)
     pk_name = naming.primary_key_name(table, op.get_bind())
     if drop_existing:
         _LOG.info("Dropping PK on table %s", table)
         op.drop_constraint(pk_name, "collection", schema=schema)
     _LOG.info("Add PK %s to table %s (%s)", pk_name, table, columns)
     op.create_primary_key(pk_name, table, columns, schema=schema)
+    _report_table_size("after adding PK", table, schema)
 
 
 def _make_fks(table: str, table_infos: dict[str, TableInfo], *, schema: str | None = None) -> None:
@@ -279,6 +282,7 @@ def _make_fks(table: str, table_infos: dict[str, TableInfo], *, schema: str | No
     schema : `str`, optional
         Database schema name.
     """
+    _report_table_size("before adding FKs", table, schema)
     for fk in table_infos[table].foreign_keys:
         new_columns = _remap_columns(table, fk["constrained_columns"])
         if new_columns is None:
@@ -301,6 +305,7 @@ def _make_fks(table: str, table_infos: dict[str, TableInfo], *, schema: str | No
             referent_schema=schema,
             **options,
         )
+    _report_table_size("after adding FKs", table, schema)
 
 
 def _make_unique(table: str, table_info: TableInfo, *, schema: str | None = None) -> None:
@@ -320,9 +325,11 @@ def _make_unique(table: str, table_info: TableInfo, *, schema: str | None = None
         if new_columns is None:
             continue
 
+        _report_table_size("before adding unique key", table, schema)
         unique_name = naming.unique_key_name(table, new_columns, op.get_bind())
         _LOG.info("Add unique constraint %s to table %s %s", unique_name, table, new_columns)
         op.create_unique_constraint(unique_name, table, new_columns, schema=schema)
+        _report_table_size("after adding unique key", table, schema)
 
 
 def _make_indices(table: str, table_info: TableInfo, *, schema: str | None = None) -> None:
@@ -344,6 +351,7 @@ def _make_indices(table: str, table_info: TableInfo, *, schema: str | None = Non
     indices. The only way to guess which is which is to look at the existing
     index name.
     """
+    _report_table_size("before adding indices", table, schema)
     for index in table_info.indices:
         if index["name"] is None:
             continue
@@ -369,6 +377,7 @@ def _make_indices(table: str, table_info: TableInfo, *, schema: str | None = Non
             idx_name = naming.index_name(table, new_columns, op.get_bind())
             _LOG.info("Add index %s to table %s %s", idx_name, table, new_columns)
         op.create_index(idx_name, table, new_columns, schema=schema)
+    _report_table_size("after adding indices", table, schema)
 
 
 def _extend_collection_table(metadata: sqlalchemy.schema.MetaData) -> None:
@@ -387,11 +396,13 @@ def _extend_collection_table(metadata: sqlalchemy.schema.MetaData) -> None:
     _LOG.info("Creating sequence for collection ID: %s", seq_name)
     sequence.create(bind)
 
+    _report_table_size("before adding collection_id", table_name, schema)
     # Add collection_id column to collection table, it has to be nullable
     # initially, will be changed after we fill it.
     new_column = sqlalchemy.schema.Column(column_name, sqlalchemy.BigInteger, nullable=True)
     _LOG.info("Adding column %s to table %s", column_name, table_name)
     op.add_column(table_name, new_column, schema=schema)
+    _report_table_size("after adding collection_id", table_name, schema)
 
     # Update metadata.
     metadata.reflect(bind, extend_existing=True)
@@ -401,6 +412,7 @@ def _extend_collection_table(metadata: sqlalchemy.schema.MetaData) -> None:
     table = _get_table(metadata, table_name)
     update = table.update().values(collection_id=sequence.next_value())
     op.execute(update)
+    _report_table_size("after filling collection_id", table_name, schema)
 
     # Make it NOT NULL
     _LOG.info("Set NOT NULL on column %s.%s", table_name, column_name)
@@ -441,9 +453,11 @@ def _add_id_column(
     bind = op.get_bind()
 
     _LOG.info("Add column %s to table %s", id_column, table_name)
+    _report_table_size("before adding column", table_name, schema)
 
     new_column = sqlalchemy.schema.Column(id_column, sqlalchemy.BigInteger, nullable=True)
     op.add_column(table_name, new_column, schema=schema)
+    _report_table_size("after adding column", table_name, schema)
 
     # Update metadata.
     metadata.reflect(bind, extend_existing=True)
@@ -459,6 +473,7 @@ def _add_id_column(
     update = table.update().values({id_column: subq.scalar_subquery()})
     _LOG.info("Fill column %s.%s from %s.%s", table_name, id_column, parent_table, parent_id_column)
     op.execute(update)
+    _report_table_size("after filling column", table_name, schema)
 
     # Make it NOT NULL
     _LOG.info("Set NOT NULL on column %s.%s", table_name, id_column)
@@ -475,6 +490,36 @@ def _get_table(metadata: sqlalchemy.schema.MetaData, name: str) -> sqlalchemy.sc
     if not tables:
         raise LookupError("Failed to find table %r in schema", name)
     return tables.pop()
+
+
+def _report_table_size(message: str, table: str, schema: str | None = None) -> None:
+    """Print information about table sizes."""
+    if schema:
+        query = (
+            "select pg_table_size(quote_ident(:schema) || '.' || quote_ident(:table)), "
+            "pg_indexes_size(quote_ident(:schema) || '.' || quote_ident(:table)), "
+            "pg_total_relation_size(quote_ident(:schema) || '.' || quote_ident(:table))"
+        )
+    else:
+        query = (
+            "select pg_table_size(quote_ident(:table)), "
+            "pg_indexes_size(quote_ident(:table)), "
+            "pg_total_relation_size(quote_ident(:table))"
+        )
+
+    connection = op.get_bind()
+    result = connection.execute(sqlalchemy.text(query), {"schema": schema, "table": table})
+    table_size, indices_size, total = result.one()
+    # Print numbers with thousand separators.
+    pp = pprint.PrettyPrinter(underscore_numbers=True)
+    _LOG.info(
+        "%s table size %s: table=%s, indices=%s, total=%s",
+        table,
+        message,
+        pp.pformat(table_size),
+        pp.pformat(indices_size),
+        pp.pformat(total),
+    )
 
 
 def downgrade() -> None:
