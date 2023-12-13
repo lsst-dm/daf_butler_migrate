@@ -87,6 +87,10 @@ def upgrade() -> None:
 
     all_tables = _all_tables(schema)
     dynamic_tables = [table for table in all_tables if table not in STATIC_TABLES]
+
+    # Lock all tables to avoid issues.
+    _lock_tables(all_tables, schema)
+
     table_infos = _reflect_tables(schema, all_tables)
 
     # Add new columns with collection_id to all relevant tables.
@@ -176,6 +180,20 @@ def _all_tables(schema: str) -> list[str]:
     ]
     _LOG.debug("_all_tables: %s", tables)
     return tables
+
+
+def _lock_tables(tables: list[str], schema: str) -> None:
+    """Lock all tables that need to be migrated to avoid conflicts."""
+
+    connection = op.get_bind()
+    for table in tables:
+        # We do not need quoting for schema/table names.
+        if schema:
+            query = f"LOCK TABLE {schema}.{table} IN EXCLUSIVE MODE"
+        else:
+            query = f"LOCK TABLE {table} IN EXCLUSIVE MODE"
+        _LOG.info("Locking table %s", table)
+        connection.execute(sqlalchemy.text(query))
 
 
 def _reflect_tables(schema: str, table_names: list[str]) -> dict[str, TableInfo]:
