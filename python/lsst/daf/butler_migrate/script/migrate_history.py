@@ -58,12 +58,20 @@ def migrate_history(tree_name: str, mig_path: str, verbose: bool, one_shot: bool
 
 def _one_shot_migrate_history(tree_name: str, mig_path: str, verbose: bool) -> None:
     if tree_name:
-        # if tree name is given then nothing to do for us
-        cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
-        command.history(cfg, verbose=verbose)
+        if "/" in tree_name:
+            # Full tree name specified.
+            single_trees = [tree_name]
+        else:
+            # This is a maanger name, get all one-shot trees for this manager.
+            migrate_trees = migrate.MigrationTrees(mig_path)
+            locations = migrate_trees.one_shot_locations(tree_name, relative=False)
+            single_trees = list(locations)
     else:
+        # Get all trees for all managers.
         migrate_trees = migrate.MigrationTrees(mig_path)
         locations = migrate_trees.one_shot_locations(relative=False)
-        for tree_name in locations.keys():
-            cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
-            command.history(cfg, verbose=verbose)
+        single_trees = list(locations)
+
+    for tree_name in single_trees:
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+        command.history(cfg, verbose=verbose)

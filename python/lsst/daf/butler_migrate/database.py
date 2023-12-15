@@ -92,7 +92,7 @@ class Database:
     @property
     def db_url(self) -> str:
         """URL for registry database (`str`)"""
-        return str(self._db_url)
+        return self._db_url.render_as_string(hide_password=False)
 
     @property
     def schema(self) -> str | None:
