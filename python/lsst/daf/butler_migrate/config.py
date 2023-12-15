@@ -59,7 +59,7 @@ class MigAlembicConfig(Config):
             Object encapsulating access to database information.
         single_tree : `str`, optional
             If provided then Alembic will be configured with a single version
-            tree only. If it contains slash charater then it is assumed to be
+            tree only. If it contains slash character then it is assumed to be
             one-shot tree.
         one_shot_tree : `str`, optional
             If this is given (and ``single_tree`` is not) then this tree will
