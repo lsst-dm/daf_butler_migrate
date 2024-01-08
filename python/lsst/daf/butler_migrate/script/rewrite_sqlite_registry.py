@@ -259,7 +259,7 @@ def transfer_non_datasets(source_butler: DirectButler, dest_butler: DirectButler
     BackendClass = get_class_of(source_butler._config["repo_transfer_formats", "yaml", "export"])
     backend = BackendClass(yamlBuffer)
     exporter = RepoExportContext(
-        source_butler._registry, source_butler.datastore, backend, directory=None, transfer=None
+        source_butler._registry, source_butler._datastore, backend, directory=None, transfer=None
     )
 
     # Export all the collections.
