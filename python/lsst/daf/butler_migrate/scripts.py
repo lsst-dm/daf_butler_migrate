@@ -48,3 +48,14 @@ class Scripts:
             migration tree.
         """
         return list(self.scripts.get_bases())
+
+    def head_revisions(self) -> list[str]:
+        """Return list of all head revisions, or tops of the migration trees.
+
+        Returns
+        -------
+        heads : `list` [`str`]
+            Head revisions, corresponding to the tops of the each migration
+            tree.
+        """
+        return list(self.scripts.get_heads())
