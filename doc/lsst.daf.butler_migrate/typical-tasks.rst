@@ -82,13 +82,13 @@ If ``(head)`` is missing then newer revisions exist in the revision history, and
 With the ``--butler`` option this command displays information from the ``butler_attributes`` table::
 
     $ butler migrate show-current --butler $REPO
-    attributes: lsst.daf.butler.registry.attributes.DefaultButlerAttributeManager 1.0.0 -> f22a777cf382
-    collections: lsst.daf.butler.registry.collections.synthIntKey.SynthIntKeyCollectionManager 2.0.0 -> 8c57494cabcc
-    datasets: lsst.daf.butler.registry.datasets.byDimensions._manager.ByDimensionsDatasetRecordStorageManagerUUID 1.0.0 -> 2101fbf51ad3
-    datastores: lsst.daf.butler.registry.bridge.monolithic.MonolithicDatastoreRegistryBridgeManager 0.2.0 -> a07b3b60e369
-    dimensions: lsst.daf.butler.registry.dimensions.static.StaticDimensionRecordStorageManager 6.0.2 -> 035dcf13ef18
-    dimensions-config: daf_butler 3 -> c5ae3a2cd7c2
-    opaque: lsst.daf.butler.registry.opaque.ByNameOpaqueTableStorageManager 0.2.0 -> 77e5b803ad3f
+    attributes: lsst.daf.butler.registry.attributes.DefaultButlerAttributeManager 1.0.0 -> f22a777cf382 (head)
+    collections: lsst.daf.butler.registry.collections.synthIntKey.SynthIntKeyCollectionManager 2.0.0 -> 8c57494cabcc (head)
+    datasets: lsst.daf.butler.registry.datasets.byDimensions._manager.ByDimensionsDatasetRecordStorageManagerUUID 1.0.0 -> 2101fbf51ad3 (head)
+    datastores: lsst.daf.butler.registry.bridge.monolithic.MonolithicDatastoreRegistryBridgeManager 0.2.0 -> a07b3b60e369 (head)
+    dimensions: lsst.daf.butler.registry.dimensions.static.StaticDimensionRecordStorageManager 6.0.2 -> 035dcf13ef18 (head)
+    dimensions-config: daf_butler 3 -> c5ae3a2cd7c2 (head)
+    opaque: lsst.daf.butler.registry.opaque.ByNameOpaqueTableStorageManager 0.2.0 -> 77e5b803ad3f (head)
 
 The output includes manager type name, its full class name (except for special ``dimensions-config`` manager), and its version number.
 The revision number appearing here is calculated from those three items and it must match one of the revisions in ``alembic_version`` table.

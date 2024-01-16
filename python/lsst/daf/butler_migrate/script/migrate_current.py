@@ -60,24 +60,24 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, names
             " stored dimensions configuration"
         )
 
-    cfg: config.MigAlembicConfig | None = None
+    cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
     if butler:
         # Print current versions defined in butler.
+        script_info = scripts.Scripts(cfg)
+        heads = script_info.head_revisions()
         manager_versions = db.manager_versions(namespace)
         if manager_versions:
             for manager, (klass, version, rev_id) in sorted(manager_versions.items()):
-                print(f"{manager}: {klass} {version} -> {rev_id}")
+                head = " (head)" if rev_id in heads else ""
+                print(f"{manager}: {klass} {version} -> {rev_id}{head}")
         else:
             print("No manager versions defined in butler_attributes table.")
     else:
-        # Revisions from alembic
-        cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
+        # Revisions from alembic.
         command.current(cfg, verbose=verbose)
 
-    # complain if alembic_version table is there but does not match manager
-    # versions
+    # Complain if alembic_version table is there but does not match manager
+    # versions.
     if db.alembic_revisions():
-        if cfg is None:
-            cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
         script_info = scripts.Scripts(cfg)
         db.validate_revisions(namespace, script_info.base_revisions())
