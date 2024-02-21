@@ -43,7 +43,11 @@ class ButlerAttributes:
         self._connection = connection
         metadata = sqlalchemy.schema.MetaData(schema=schema)
         self._table = sqlalchemy.schema.Table(
-            "butler_attributes", metadata, autoload_with=connection, schema=schema
+            "butler_attributes",
+            metadata,
+            sqlalchemy.schema.Column("name", sqlalchemy.Text, primary_key=True),
+            sqlalchemy.schema.Column("value", sqlalchemy.Text, nullable=False),
+            schema=schema,
         )
 
     def get(self, name: str) -> str | None:
@@ -108,7 +112,9 @@ class ButlerAttributes:
         """
         # update version
         sql = self._table.update().where(self._table.columns.name == name).values(value=value)
-        return self._connection.execute(sql).rowcount
+        result = self._connection.execute(sql)
+        # result may be None in offline mode, assume that we updated something
+        return 1 if result is None else result.rowcount
 
     def update_manager_version(self, manager: str, version: str) -> None:
         """Update version for the specified manager.
@@ -145,7 +151,9 @@ class ButlerAttributes:
             otherwise.
         """
         sql = self._table.delete().where(self._table.columns.name == name)
-        return self._connection.execute(sql).rowcount
+        result = self._connection.execute(sql)
+        # result may be None in offline mode, assume that we deleted something
+        return 1 if result is None else result.rowcount
 
     def get_dimensions_json(self) -> dict[str, Any]:
         """Return dimensions configuration from dimensions.json.
