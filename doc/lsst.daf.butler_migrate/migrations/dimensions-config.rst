@@ -62,3 +62,12 @@ Migration script: `9888256c6a18.py <https://github.com/lsst-dm/daf_butler_migrat
 
 Does not change the schema, only updates the contents of ``config:dimensions.json``.
 Three elements in dimensions configuration add ``populated_by: visit`` option.
+
+
+daf_butler 4 to 5
+=================
+
+Migration script: `2a8a32e1bec3.py <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/2a8a32e1bec3.py>`_
+
+Alters ``instrument`` table schema, changes ``name`` column size to 32 from 16.
+Updates ``config:dimensions.json`` with a matching change to ``instrument`` element.
