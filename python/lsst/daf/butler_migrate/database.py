@@ -38,7 +38,7 @@ _LOG = logging.getLogger(__name__)
 
 class RevisionConsistencyError(Exception):
     """Exception raised when butler_attributes and alembic_version tables are
-    in inconsistent state
+    in inconsistent state.
     """
 
 
@@ -91,12 +91,12 @@ class Database:
 
     @property
     def db_url(self) -> str:
-        """URL for registry database (`str`)"""
+        """URL for registry database (`str`)."""
         return self._db_url.render_as_string(hide_password=False)
 
     @property
     def schema(self) -> str | None:
-        """Schema (namespace) name (`str`)"""
+        """Schema (namespace) name (`str`)."""
         return self._schema
 
     @contextmanager
@@ -202,7 +202,7 @@ class Database:
         return revisions
 
     def alembic_revisions(self) -> list[str]:
-        """Return a list of current revision numbers from database
+        """Return a list of current revision numbers from database.
 
         Returns
         -------

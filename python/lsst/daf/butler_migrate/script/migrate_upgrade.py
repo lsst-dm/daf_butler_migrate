@@ -60,6 +60,8 @@ def migrate_upgrade(
     namespace : `str`, optional
         Dimensions namespace to use when "namespace" key is not present in
         ``config:dimensions.json``.
+    options : `dict` [ `str`, `str` ] or `None`
+        Options to select.
     """
     db = database.Database.from_repo(repo)
 
