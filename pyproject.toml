@@ -105,3 +105,5 @@ max-doc-length = 79
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
+
+[tool.pytest.ini_options]
