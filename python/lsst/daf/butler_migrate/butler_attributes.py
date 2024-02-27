@@ -123,7 +123,7 @@ class ButlerAttributes:
         ----------
         manager : `str`
             Manager name.
-        value : `str`
+        version : `str`
             New version string.
 
         Raises

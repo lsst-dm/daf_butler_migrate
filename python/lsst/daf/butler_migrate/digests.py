@@ -46,7 +46,7 @@ def get_digest(
     dialect : `sqlalchemy.engine.Dialect`, optional
         Dialect used to stringify types; needed to support dialect-specific
         types.
-    nullable_columns: `set` of `str`
+    nullable_columns : `set` of `str`
         Names of columns which are forced to be nullable. This is used to
         reproduce a case when some PK columns are defined as nullable in
         daf_butler.
@@ -83,7 +83,7 @@ def _tableSchemaRepr(
     dialect : `sqlalchemy.engine.Dialect`, optional
         Dialect used to stringify types; needed to support dialect-specific
         types.
-    nullable_columns: `set` of `str`
+    nullable_columns : `set` of `str`
         Names of columns which are forced to be nullable. This is used to
         reproduce a case when some PK columns are defined as nullable in
         daf_butler.
