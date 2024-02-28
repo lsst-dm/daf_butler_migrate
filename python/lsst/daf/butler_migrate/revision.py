@@ -35,7 +35,12 @@ produced by `uuid.uuid5(uuid.NAMESPACE_DNS, "lsst.org")`.
 def rev_id(*args: str) -> str:
     """Generate revision ID from arguments.
 
-    Returned string is a determenistic hash of the arguments.
+    Returned string is a deterministic hash of the arguments.
+
+    Parameters
+    ----------
+    *args : `str`
+        List of strings to be hashed.
 
     Returns
     -------

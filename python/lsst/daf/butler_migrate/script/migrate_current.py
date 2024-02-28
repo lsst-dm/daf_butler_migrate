@@ -45,10 +45,10 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, names
         Filesystem path to location of revisions.
     verbose : `bool`
         Print verbose information if this flag is true.
-    butler: `bool`
+    butler : `bool`
         If True then print versions numbers from butler, otherwise display
         information about alembic revisions.
-    namespace: `str`, optional
+    namespace : `str`, optional
         Dimensions namespace to use when "namespace" key is not present in
         ``config:dimensions.json``.
     """

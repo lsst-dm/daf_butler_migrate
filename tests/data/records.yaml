@@ -41,24 +41,36 @@ data:
         physical_filter: g
         seq_num: 100
         obs_id: "exp:1000"
+        group_name: "100"
+        datetime_begin: !butler_time/tai/iso '2024-01-01 12:00:00.000000'
+        datetime_end: !butler_time/tai/iso '2024-01-01 12:10:00.000000'
       -
         instrument: Cam
         id: 1001
         physical_filter: g
         seq_num: 101
         obs_id: "exp:1001"
+        group_name: "101"
+        datetime_begin: !butler_time/tai/iso '2024-01-01 13:00:00.000000'
+        datetime_end: !butler_time/tai/iso '2024-01-01 13:10:00.000000'
       -
         instrument: Cam
         id: 2000
         physical_filter: r
         seq_num: 200
         obs_id: "exp:2000"
+        group_name: "200"
+        datetime_begin: !butler_time/tai/iso '2024-01-01 14:00:00.000000'
+        datetime_end: !butler_time/tai/iso '2024-01-01 14:10:00.000000'
       -
         instrument: Cam
         id: 2001
         physical_filter: r
         seq_num: 201
         obs_id: "exp:2001"
+        group_name: "201"
+        datetime_begin: !butler_time/tai/iso '2024-01-01 15:00:00.000000'
+        datetime_end: !butler_time/tai/iso '2024-01-01 15:10:00.000000'
   -
     type: dimension
     element: visit
@@ -69,12 +81,16 @@ data:
         physical_filter: g
         name: "visit-1"
         visit_system: 0
+        datetime_begin: !butler_time/tai/iso '2024-01-01 12:00:00.000000'
+        datetime_end: !butler_time/tai/iso '2024-01-01 12:10:00.000000'
       -
         instrument: Cam
         id: 2
         physical_filter: r
         name: "visit-2"
         visit_system: 0
+        datetime_begin: !butler_time/tai/iso '2024-01-01 14:00:00.000000'
+        datetime_end: !butler_time/tai/iso '2024-01-01 14:10:00.000000'
   -
     type: dimension
     element: visit_definition

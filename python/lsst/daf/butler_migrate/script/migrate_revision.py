@@ -35,7 +35,20 @@ _LOG = logging.getLogger(__name__)
 
 
 def _revision_exists(scripts: ScriptDirectory, revision: str) -> bool:
-    """Check that revision exists."""
+    """Check that revision exists.
+
+    Parameters
+    ----------
+    scripts : `ScriptDirectory`
+        Location of scripts.
+    revision : `str`
+        Revision to check.
+
+    Returns
+    -------
+    exists : `bool`
+        Whether the revision exists or not.
+    """
     try:
         scripts.get_revisions(revision)
         return True

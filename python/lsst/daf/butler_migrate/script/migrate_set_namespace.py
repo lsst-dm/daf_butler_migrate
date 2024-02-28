@@ -39,7 +39,7 @@ def migrate_set_namespace(repo: str, namespace: str | None, update: bool) -> Non
     repo : `str`
         Path to butler configuration YAML file or a directory containing a
         "butler.yaml" file.
-    namespace: `str`, optional
+    namespace : `str`, optional
         Dimensions namespace to set, if `None` then existing namespace is
         printed.
     update : `bool`

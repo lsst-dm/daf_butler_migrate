@@ -198,7 +198,18 @@ def transfer_everything(source_butler: DirectButler, dest_butler: DirectButler) 
 def create_associations(
     source_butler: Butler, dest_butler: Butler, source_to_dest: dict[DatasetId, DatasetRef]
 ) -> None:
-    """Create TAGGED and CALIBRATION collections in destination."""
+    """Create TAGGED and CALIBRATION collections in destination.
+
+    Parameters
+    ----------
+    source_butler : `lsst.daf.butler.Butler`
+        Source butler.
+    dest_butler : `lsst.daf.butler.Butler`
+        Destination butler.
+    source_to_dest : `dict` [ `lsst.daf.butler.DatasetId`, \
+            `lsst.daf.butler.DatasetRef` ]
+        Mapping of dataset ID to dataset ref.
+    """
     # For every dataset type in destination, get TAGGED and CALIBRATION
     # collection associations from the source, converting the source ID
     # to the correct destination ID.

@@ -49,10 +49,10 @@ def migrate_stamp(
         Delete all entries in the version table before stamping.
     dry_run : `bool`
         Skip all updates.
-    namespace: `str`, optional
+    namespace : `str`, optional
         Dimensions namespace to use when "namespace" key is not present in
         ``config:dimensions.json``.
-    manager: `str`, Optional
+    manager : `str`, Optional
         Name of the manager to stamp, if `None` then all managers are stamped.
     """
     db = database.Database.from_repo(repo)

@@ -173,7 +173,7 @@ def rewrite_sqlite_registry(**kwargs: Any) -> None:
 @repo_argument(required=True)
 @namespace_argument(required=False)
 def set_namespace(**kwargs: Any) -> None:
-    """Add or update namespace attribute to dimensions.json"""
+    """Add or update namespace attribute to dimensions.json."""
     script.migrate_set_namespace(**kwargs)
 
 

@@ -57,9 +57,11 @@ def migrate_upgrade(
         Name of special one-shot tree, if empty use regular history.
     sql : `bool`
         If True dump SQL instead of executing migration on a database.
-    namespace: `str`, optional
+    namespace : `str`, optional
         Dimensions namespace to use when "namespace" key is not present in
         ``config:dimensions.json``.
+    options : `dict` [ `str`, `str` ] or `None`
+        Options to select.
     """
     db = database.Database.from_repo(repo)
 

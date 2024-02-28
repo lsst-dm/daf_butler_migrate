@@ -36,7 +36,7 @@ def migrate_dump_schema(repo: str, table: list[str]) -> None:
     repo : `str`
         Path to butler configuration YAML file or a directory containing a
         "butler.yaml" file.
-    tables: `list`
+    table : `list`
         List of the tables, if empty then schema for all tables is printed.
     """
     db = database.Database.from_repo(repo)
