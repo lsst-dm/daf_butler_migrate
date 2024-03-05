@@ -21,6 +21,17 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "tree_name_argument",
+    "class_argument",
+    "version_argument",
+    "revision_argument",
+    "manager_argument",
+    "namespace_argument",
+    "tables_argument",
+    "instrument_argument",
+]
+
 from lsst.daf.butler.cli.utils import MWArgumentDecorator
 
 tree_name_argument = MWArgumentDecorator(
@@ -76,4 +87,10 @@ tables_argument = MWArgumentDecorator(
     help="TABLE specify multiple optional table names to dump, by default all tables are dumped.",
     required=False,
     nargs=-1,
+)
+
+instrument_argument = MWArgumentDecorator(
+    "instrument",
+    help="INSTRUMENT is the name of the instrument to use.",
+    required=True,
 )

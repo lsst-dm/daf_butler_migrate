@@ -30,3 +30,4 @@ from .migrate_stamp import migrate_stamp
 from .migrate_trees import migrate_trees
 from .migrate_upgrade import migrate_upgrade
 from .rewrite_sqlite_registry import rewrite_sqlite_registry
+from .update_day_obs import update_day_obs
