@@ -29,6 +29,7 @@ from ... import script
 from ..opt import (
     class_argument,
     dry_run_option,
+    instrument_argument,
     manager_argument,
     mig_path_exist_option,
     mig_path_option,
@@ -183,3 +184,14 @@ def set_namespace(**kwargs: Any) -> None:
 def dump_schema(**kwargs: Any) -> None:
     """Dump database schema in human-readable format."""
     script.migrate_dump_schema(**kwargs)
+
+
+@migrate.command(
+    short_help="Recalculate the day_obs values for exposures and visit for the given instrument.",
+    cls=ButlerCommand,
+)
+@repo_argument(required=True)
+@instrument_argument()
+def update_day_obs(**kwargs: Any) -> None:
+    """Update the day_obs values if needed."""
+    script.update_day_obs(**kwargs)

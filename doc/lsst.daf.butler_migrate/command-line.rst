@@ -28,6 +28,7 @@ There are also few commands that were added for specific cases, not generally us
 - ``dump-schema``
 - ``set-namespace``
 - ``rewrite-sqlite-registry``
+- ``update-day-obs``
 
 Sections below describe individual commands and their options.
 
