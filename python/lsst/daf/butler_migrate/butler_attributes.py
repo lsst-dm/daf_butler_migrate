@@ -27,6 +27,10 @@ from typing import Any, cast
 
 import sqlalchemy
 
+from ._dimensions_json_utils import compare_json_strings, load_historical_dimension_universe_json
+
+_DIMENSIONS_JSON_KEY = "config:dimensions.json"
+
 
 class ButlerAttributes:
     """Helper class implementing updates for butler_attributes table.
@@ -163,12 +167,15 @@ class ButlerAttributes:
         config : `dict`
             Contents of ``dimensions.json`` as dictionary.
         """
-        key = "config:dimensions.json"
+        config = json.loads(self._load_dimensions_json())
+        return config
+
+    def _load_dimensions_json(self) -> str:
+        key = _DIMENSIONS_JSON_KEY
         config_json = self.get(key)
         if config_json is None:
             raise LookupError(f"Key {key} does not exist in attributes table")
-        config = json.loads(config_json)
-        return config
+        return config_json
 
     def update_dimensions_json(self, update_config: Callable[[dict], dict]) -> None:
         """Update dimensions definitions in dimensions.json.
@@ -179,7 +186,7 @@ class ButlerAttributes:
             A method that takes a dictionary representation of the
             ``dimensions.json`` and returns an updated dictionary.
         """
-        key = "config:dimensions.json"
+        key = _DIMENSIONS_JSON_KEY
         config_json = self.get(key)
         if config_json is None:
             raise LookupError(f"Key {key} does not exist in attributes table")
@@ -190,3 +197,47 @@ class ButlerAttributes:
 
         config_json = json.dumps(config)
         self.update(key, config_json)
+
+    def validate_dimensions_json(self, expected_universe_version: int) -> None:
+        """
+        Compare the dimensions.json definition stored in the attributes table
+        with the default daf_butler dimensions.json at a specific version, and
+        raise an exception if they do not match.
+
+        Parameters
+        ----------
+        expected_universe_version : `int`
+            Version number of the daf_butler universe that we expect to find in
+            the DB.
+
+        Raises
+        ------
+        ValueError
+            If the dimension universe stored in the database does not match the
+            expected value.
+        """
+        expected_json = load_historical_dimension_universe_json(expected_universe_version)
+        actual_json = self._load_dimensions_json()
+        diff = compare_json_strings(expected_json, actual_json)
+        if diff is not None:
+            err = ValueError(
+                "dimensions.json stored in database does not match expected"
+                f" daf_butler universe version {expected_universe_version}."
+            )
+            err.add_note(f"Differences:\n\n{diff}")
+            raise err
+
+        return None
+
+    def replace_dimensions_json(self, universe_version: int) -> None:
+        """Replace the dimensions.json definition stored in the attributes
+        table to match the default daf_butler dimensions.json at a specific
+        version.
+
+        Parameters
+        ----------
+        universe_version : `int`
+            Version number for the daf_butler universe to be saved in the DB.
+        """
+        dimensions = load_historical_dimension_universe_json(universe_version)
+        self.update(_DIMENSIONS_JSON_KEY, dimensions)
