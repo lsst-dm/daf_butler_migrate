@@ -27,7 +27,7 @@ from lsst.daf.butler.direct_butler import DirectButler
 from lsst.daf.butler.registry.sql_registry import SqlRegistry
 from lsst.daf.butler.tests.utils import makeTestTempDir, removeTestTempDir
 from lsst.daf.butler.transfers import YamlRepoImportBackend
-from lsst.daf.butler_migrate import database, migrate, script
+from lsst.daf.butler_migrate import butler_attributes, database, migrate, script
 
 TESTDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -199,6 +199,19 @@ class DimensionsJsonTestCase(unittest.TestCase):
                 {"instrument": "Cam", "visit_system": 0, "visit": 2},
             ],
         )
+
+    def test_validate_dimensions_json(self) -> None:
+        self.make_butler_v0()
+        universe = 5
+        with self.db.connect() as connection:
+            attribs = butler_attributes.ButlerAttributes(connection)
+            with self.assertRaisesRegex(
+                ValueError, "dimensions.json stored in database does not match expected"
+            ):
+                attribs.validate_dimensions_json(universe)
+
+            attribs.replace_dimensions_json(universe)
+            self.assertIsNone(attribs.validate_dimensions_json(universe))
 
 
 if __name__ == "__main__":

@@ -32,12 +32,12 @@ __all__ = [
 
 from typing import TYPE_CHECKING
 
+import sqlalchemy
+
 from .shrink import shrinkDatabaseEntityName
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    import sqlalchemy
 
 
 def primary_key_name(table: str, bind: sqlalchemy.engine.Connection) -> str:
@@ -180,3 +180,31 @@ def is_foreign_key_index(table: str, index_name: str) -> bool:
 
 def is_regular_index(table: str, index_name: str) -> bool:
     return index_name.startswith(f"{table}_idx_")
+
+
+def make_string_length_constraint(
+    column_name: str, max_length: int, constraint_name: str
+) -> sqlalchemy.schema.CheckConstraint:
+    """Create a check constraint that guarantees a string column has a length
+    that is non-zero and less than a specified maximum.
+
+    These constraints are used by Butler in sqlite databases to emulate
+    VARCHARs with a specific length.
+
+    Parameters
+    ----------
+    column_name : `str`
+        The name of the column to create the constraint on.
+    max_length : `int`
+        The maximum length allowed for strings stored in this column.
+    constraint_name : `str`
+        An arbitrary identifier for the constraint.
+
+    Returns
+    -------
+    check_constraint : `sqlalchemy.schema.CheckConstraint`
+        The generated check constraint.
+    """
+    return sqlalchemy.schema.CheckConstraint(
+        f'length("{column_name}")<={max_length} AND length("{column_name}")>=1', name=constraint_name
+    )

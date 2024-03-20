@@ -1,0 +1,80 @@
+# This file is part of daf_butler_migrate.
+#
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (http://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import difflib
+import json
+
+
+def load_historical_dimension_universe_json(universe_version: int) -> str:
+    """Load a specific version of the default dimension universe as JSON.
+
+    Parameters
+    ----------
+    universe_version : `int`
+        Version number of the universe to be loaded.
+
+    Returns
+    -------
+    universe : `str`
+        Dimension universe configuration encoded as a JSON string.
+    """
+    import yaml
+    from lsst.resources import ResourcePath
+
+    path = ResourcePath(
+        f"resource://lsst.daf.butler/configs/old_dimensions/daf_butler_universe{universe_version}.yaml"
+    )
+    with path.open() as input:
+        dimensions = yaml.safe_load(input)
+    return json.dumps(dimensions)
+
+
+def compare_json_strings(expected: str, actual: str) -> str | None:
+    """Compare two JSON strings and return a human-readable description of
+    the differences.
+
+    Parameters
+    ----------
+    expected : `str`
+        JSON-encoded string to use as the basis for comparison.
+    actual : `str`
+        JSON-encoded string to compare with the expected value.
+
+    Returns
+    -------
+    diff : `str` | `None`
+        If the two inputs parse as equivalent data, returns `None`.  If there
+        are differences between the two inputs, returns a human-readable string
+        describing the differences.
+    """
+    expected = _normalize_json_string(expected)
+    actual = _normalize_json_string(actual)
+
+    if expected == actual:
+        return None
+
+    diff = difflib.unified_diff(expected.splitlines(), actual.splitlines(), lineterm="")
+    return "\n".join(diff)
+
+
+def _normalize_json_string(json_string: str) -> str:
+    # Re-encode a JSON string in a standardized format with sorted keys.
+    return json.dumps(json.loads(json_string), indent=2, sort_keys=True)

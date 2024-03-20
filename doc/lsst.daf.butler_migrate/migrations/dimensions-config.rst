@@ -71,3 +71,18 @@ Migration script: `2a8a32e1bec3.py <https://github.com/lsst-dm/daf_butler_migrat
 
 Alters ``instrument`` table schema, changes ``name`` column size to 32 from 16.
 Updates ``config:dimensions.json`` with a matching change to ``instrument`` element.
+
+daf_butler 5 to 6
+=================
+
+Migration script: `1fae088c80b6.py  <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/1fae088c80b6.py>`_
+
+Supports group and day_obs as dimensions.
+
+- Add ``group`` table, and populate it based on the ``group_name`` field in the ``exposure`` table.
+- Add ``day_obs`` table, and populate based on the ``day_obs`` field from the
+  ``exposure`` table and timespan offsets from Butler ``Instrument`` classes.
+- Rename ``group_name`` in the exposure table to ``group``.
+- Update the ``exposure`` table so ``group`` and ``day_obs`` are foreign keys to the new tables.
+- Remove ``group_id`` from ``exposure`` table.
+- Update ``config:dimensions.json`` to universe 6.
