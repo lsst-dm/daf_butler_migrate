@@ -12,11 +12,10 @@ import logging
 from collections.abc import Iterator
 from typing import Any, TypeAlias
 
-import alembic
 import sqlalchemy as sa
 from alembic import op
 from lsst.daf.butler import Timespan
-from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
+from lsst.daf.butler_migrate.migration_context import MigrationContext
 from lsst.daf.butler_migrate.naming import make_string_length_constraint
 from lsst.daf.butler_migrate.timespan import create_timespan_column_definitions, format_timespan_value
 from lsst.utils import doImportType
@@ -45,7 +44,7 @@ def upgrade() -> None:
     - Remove ``group_id`` from ``exposure`` table.
     - Update ``config:dimensions.json`` to universe 6.
     """
-    ctx = _Context()
+    ctx = MigrationContext()
     _lock_exposure_table(ctx)
     _validate_initial_dimension_universe(ctx)
     _migrate_day_obs(ctx)
@@ -58,7 +57,7 @@ def downgrade() -> None:
     raise NotImplementedError()
 
 
-def _lock_exposure_table(ctx: _Context) -> None:
+def _lock_exposure_table(ctx: MigrationContext) -> None:
     # In this migration we generate new tables based on the content of the
     # exposure table, so make sure that it is not modified while we are
     # working.
@@ -74,7 +73,7 @@ def _lock_exposure_table(ctx: _Context) -> None:
     ctx.bind.execute(sa.text(f"LOCK TABLE {schema}exposure IN EXCLUSIVE MODE"))
 
 
-def _validate_initial_dimension_universe(ctx: _Context) -> None:
+def _validate_initial_dimension_universe(ctx: MigrationContext) -> None:
     config = ctx.mig_context.config
     allow_mismatch = config is not None and "1" == config.get_section_option(
         "daf_butler_migrate_options", "allow_dimension_universe_mismatch"
@@ -94,7 +93,7 @@ def _validate_initial_dimension_universe(ctx: _Context) -> None:
             raise
 
 
-def _migrate_groups(ctx: _Context) -> None:
+def _migrate_groups(ctx: MigrationContext) -> None:
     # Create group table
     _LOG.info("Creating group table")
     check_constraints = []
@@ -169,7 +168,7 @@ def _migrate_groups(ctx: _Context) -> None:
     )
 
 
-def _migrate_day_obs(ctx: _Context) -> None:
+def _migrate_day_obs(ctx: MigrationContext) -> None:
     # Before doing anything else, generate the rows for the new day_obs table
     # from the data in the exposure table.  This is prone to failure due to the
     # need to import instrument classes.
@@ -230,12 +229,12 @@ def _migrate_day_obs(ctx: _Context) -> None:
     )
 
 
-def _migrate_dimensions_json(ctx: _Context) -> None:
+def _migrate_dimensions_json(ctx: MigrationContext) -> None:
     _LOG.info("Updating dimensions.json in ButlerAttributes")
     ctx.attributes.replace_dimensions_json(6)
 
 
-def _generate_day_obs_rows(ctx: _Context) -> Iterator[dict]:
+def _generate_day_obs_rows(ctx: MigrationContext) -> Iterator[dict]:
     exposure_table = ctx.get_table("exposure")
     select = sa.select(
         exposure_table.columns["instrument"],
@@ -273,28 +272,12 @@ def _get_day_obs_offset(instrument_name: str, instrument: _Instrument, day_obs: 
     return round(offset.to_value("s"))
 
 
-class _Context:
-    def __init__(self) -> None:
-        self.mig_context = alembic.context.get_context()
-        self.schema = self.mig_context.version_table_schema
-        bind = self.mig_context.bind
-        assert bind is not None, "Can't run offline -- need access to database to migrate data."
-        self.bind = bind
-        self.dialect = self.bind.dialect.name
-        self.is_sqlite = self.dialect == "sqlite"
-        self.metadata = sa.schema.MetaData(schema=self.schema)
-        self.attributes = ButlerAttributes(self.bind, self.schema)
-
-    def get_table(self, table_name: str) -> sa.Table:
-        return sa.schema.Table(table_name, self.metadata, autoload_with=self.bind, schema=self.schema)
-
-
 _Instrument: TypeAlias = Any
 """A dynamically loaded lsst.obs_base.Instrument."""
 
 
 class _InstrumentFetcher:
-    def __init__(self, ctx: _Context) -> None:
+    def __init__(self, ctx: MigrationContext) -> None:
         self._instruments: dict[str, _Instrument] = {}
         self._ctx = ctx
 
