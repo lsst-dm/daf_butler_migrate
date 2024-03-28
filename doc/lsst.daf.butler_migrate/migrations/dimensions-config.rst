@@ -86,3 +86,10 @@ Supports group and day_obs as dimensions.
 - Update the ``exposure`` table so ``group`` and ``day_obs`` are foreign keys to the new tables.
 - Remove ``group_id`` from ``exposure`` table.
 - Update ``config:dimensions.json`` to universe 6.
+
+daf_butler 6 to 7
+=================
+
+Migration script: `352c30854bb0.py  <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/352c30854bb0.py>`_
+
+Adds ``can_see_sky`` column to the ``exposure`` table.

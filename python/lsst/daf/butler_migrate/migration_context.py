@@ -21,12 +21,13 @@
 
 from __future__ import annotations
 
+__all__ = ("MigrationContext",)
+
+
 import alembic
-import sqlalchemy as sa
+import sqlalchemy
 
 from .butler_attributes import ButlerAttributes
-
-__all__ = ("MigrationContext",)
 
 
 class MigrationContext:
@@ -35,15 +36,33 @@ class MigrationContext:
     """
 
     def __init__(self) -> None:
-        self.mig_context = alembic.context.get_context()
-        self.schema = self.mig_context.version_table_schema
+        self.mig_context = (
+            alembic.context.get_context()
+        )  #: Alembic migration context for the DB being migrated.
+        self.schema = (
+            self.mig_context.version_table_schema
+        )  #: Database schema name for the repository being migrated.
         bind = self.mig_context.bind
         assert bind is not None, "Can't run offline -- need access to database to migrate data."
-        self.bind = bind
-        self.dialect = self.bind.dialect.name
-        self.is_sqlite = self.dialect == "sqlite"
-        self.metadata = sa.schema.MetaData(schema=self.schema)
+        self.bind = bind  #: A SQLAlchemy connection for the database being migrated.
+        self.dialect = self.bind.dialect.name  #: SQLAlchemy dialect for the database being migrated.
+        self.is_sqlite = self.dialect == "sqlite"  #: True if the database being migrated is SQLite.
+        self.metadata = sqlalchemy.schema.MetaData(
+            schema=self.schema
+        )  # SQLAlchemy MetaData object for the DB being migrated.
         self.attributes = ButlerAttributes(self.bind, self.schema)
 
-    def get_table(self, table_name: str) -> sa.Table:
-        return sa.schema.Table(table_name, self.metadata, autoload_with=self.bind, schema=self.schema)
+    def get_table(self, table_name: str) -> sqlalchemy.Table:
+        """Create a SQLAlchemy table object for the current database.
+
+        Parameters
+        ----------
+        table_name : `str`
+            Name of the table.
+
+        Returns
+        -------
+        table : ``sqlalchemy.Table``
+            Table object.
+        """
+        return sqlalchemy.schema.Table(table_name, self.metadata, autoload_with=self.bind, schema=self.schema)
