@@ -22,6 +22,30 @@
 import difflib
 import json
 
+import yaml
+from lsst.resources import ResourcePath
+
+
+def historical_dimensions_resource(universe_version: int, namespace: str = "daf_butler") -> ResourcePath:
+    """Return location of the dimensions configuration for a specific version.
+
+    Parameters
+    ----------
+    universe_version : `int`
+        Version number of the universe to be loaded.
+    namespace : `str`, optional
+        Configuration namespace.
+
+    Returns
+    -------
+    path : `lsst.resources.ResourcePath`
+        Location of the configuration, there is no guarantee that this resource
+        actually exists.
+    """
+    return ResourcePath(
+        f"resource://lsst.daf.butler/configs/old_dimensions/{namespace}_universe{universe_version}.yaml"
+    )
+
 
 def load_historical_dimension_universe_json(universe_version: int) -> str:
     """Load a specific version of the default dimension universe as JSON.
@@ -36,12 +60,7 @@ def load_historical_dimension_universe_json(universe_version: int) -> str:
     universe : `str`
         Dimension universe configuration encoded as a JSON string.
     """
-    import yaml
-    from lsst.resources import ResourcePath
-
-    path = ResourcePath(
-        f"resource://lsst.daf.butler/configs/old_dimensions/daf_butler_universe{universe_version}.yaml"
-    )
+    path = historical_dimensions_resource(universe_version)
     with path.open() as input:
         dimensions = yaml.safe_load(input)
     return json.dumps(dimensions)
