@@ -5,6 +5,7 @@ Revises: 9888256c6a18
 Create Date: 2024-02-20 14:49:26.435042
 
 """
+
 import logging
 
 import sqlalchemy
@@ -92,7 +93,14 @@ def _migrate(old_version: int, new_version: int, size: int) -> None:
     # Actual schema change.
     for table, column in table_columns:
         _LOG.info("Alter %s.%s column type to %s", table, column, new_type)
-        op.alter_column(table, column, type_=new_type, schema=schema)
+        with op.batch_alter_table(table, schema=schema) as batch_op:
+            batch_op.alter_column(column, type_=new_type)
+            if op.get_bind().dialect.name == "sqlite" and table == "instrument":
+                # SQLite uses special check constraint.
+                constraint_name = "instrument_len_name"
+                batch_op.drop_constraint(constraint_name)
+                constraint = f'length("{column}")<={size} AND length("{column}")>=1'
+                batch_op.create_check_constraint(constraint_name, sqlalchemy.text(constraint))
 
     # Update attributes
     assert mig_context.bind is not None
@@ -141,6 +149,10 @@ def _lock_tables(tables: list[str], schema: str) -> None:
     """Lock all tables that need to be migrated to avoid conflicts."""
 
     connection = op.get_bind()
+    if connection.dialect.name == "sqlite":
+        # SQLite does not support LOCK TABLE.
+        return
+
     for table in tables:
         # We do not need quoting for schema/table names.
         if schema:
