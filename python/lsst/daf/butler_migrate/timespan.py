@@ -77,7 +77,7 @@ def format_timespan_value(timespan: Timespan, column_name: str, dialect: str) ->
     values : `dict` [ `str`, `typing.Any` ]
         Mapping from column name to value for that column.
     """
-    nanoseconds = timespan.to_simple()
+    nanoseconds = timespan.nsec
     if dialect == "postgresql":
         return {column_name: Range(*nanoseconds)}
     elif dialect == "sqlite":
