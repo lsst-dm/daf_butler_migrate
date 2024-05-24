@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Iterable
 from typing import Any, cast
 
@@ -219,7 +220,7 @@ class ButlerAttributes:
         expected_json = load_historical_dimension_universe_json(expected_universe_version)
         actual_json = self._load_dimensions_json()
         diff = compare_json_strings(expected_json, actual_json)
-        if diff is not None:
+        if diff is not None and not _is_expected_dimensions_json_mismatch(expected_json, actual_json):
             err = ValueError(
                 "dimensions.json stored in database does not match expected"
                 f" daf_butler universe version {expected_universe_version}."
@@ -241,3 +242,33 @@ class ButlerAttributes:
         """
         dimensions = load_historical_dimension_universe_json(universe_version)
         self.update(_DIMENSIONS_JSON_KEY, dimensions)
+
+
+def _is_expected_dimensions_json_mismatch(expected_json: str, actual_json: str) -> bool:
+    # Return `True` if the two dimension universe JSON strings differ only in
+    # ways expected because of the history of this data.  Older repositories
+    # that have been previously migrated have some documentation strings that
+    # don't match the current dimension universe because of how dimension
+    # universes were patched in earlier migrations.
+
+    diff = compare_json_strings(expected_json, actual_json, diff_style="ndiff")
+    if diff is None:
+        return True
+
+    return all(_is_expected_diff_line(line) for line in diff.splitlines())
+
+
+def _is_expected_diff_line(line: str) -> bool:
+    # ndiff prefix for matching lines and "hint" lines.
+    if line.startswith("  ") or line.startswith("? "):
+        return True
+
+    # Lines containing only docstring changes.
+    if re.match(r'^[-+]\s+"doc":', line):
+        return True
+
+    # Empty line.
+    if line.strip() == "":
+        return True
+
+    return False

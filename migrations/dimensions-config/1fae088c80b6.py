@@ -84,8 +84,6 @@ def _validate_initial_dimension_universe(ctx: MigrationContext) -> None:
             ctx.attributes.validate_dimensions_json(5)
         except ValueError as e:
             e.add_note(
-                "Repositories originally created at dimension universe 1 or earlier may have incorrect"
-                " documentation strings.\n"
                 "Re-run butler migrate with the flag '--options allow_dimension_universe_mismatch=1' to"
                 " bypass this check.\n"
                 "This will overwrite any customizations made to the dimension universe."
