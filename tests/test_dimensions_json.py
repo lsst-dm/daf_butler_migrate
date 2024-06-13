@@ -329,23 +329,25 @@ class DimensionsJsonTestCase(TestCaseMixin):
             attribs.validate_dimensions_json(universe)
 
     def test_ignore_expected_dimension_json_mismatch(self) -> None:
-        original = '{"a": 1, "doc": "good"}'
+        original = '{"a": 1, "b": {"doc": "good"}}'
         self.assertTrue(butler_attributes._is_expected_dimensions_json_mismatch(original, original))
         # Mismatched doc but everything else OK
         self.assertTrue(
-            butler_attributes._is_expected_dimensions_json_mismatch(original, '{"a": 1, "doc": "bad"}')
+            butler_attributes._is_expected_dimensions_json_mismatch(original, '{"a": 1, "b": {"doc": "bad"}}')
         )
         # Order doesn't matter
         self.assertTrue(
-            butler_attributes._is_expected_dimensions_json_mismatch(original, '{"doc": "bad", "a": 1}')
+            butler_attributes._is_expected_dimensions_json_mismatch(original, '{"b": {"doc": "bad"}, "a": 1}')
         )
         # Mismatched non-doc value
         self.assertFalse(
-            butler_attributes._is_expected_dimensions_json_mismatch(original, '{"a": 2, "doc": "good"}')
+            butler_attributes._is_expected_dimensions_json_mismatch(
+                original, '{"a": 2, "b": {"doc": "good"}}'
+            )
         )
         # Mismatched value and doc
         self.assertFalse(
-            butler_attributes._is_expected_dimensions_json_mismatch(original, '{"a": 2, "doc": "bad"}')
+            butler_attributes._is_expected_dimensions_json_mismatch(original, '{"a": 2, "b": {"doc": "bad"}}')
         )
 
 

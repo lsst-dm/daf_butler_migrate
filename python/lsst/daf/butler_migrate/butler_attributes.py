@@ -22,7 +22,6 @@
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Callable, Iterable
 from typing import Any, cast
 
@@ -251,24 +250,28 @@ def _is_expected_dimensions_json_mismatch(expected_json: str, actual_json: str) 
     # don't match the current dimension universe because of how dimension
     # universes were patched in earlier migrations.
 
-    diff = compare_json_strings(expected_json, actual_json, diff_style="ndiff")
-    if diff is None:
-        return True
+    diff = compare_json_strings(
+        _strip_doc_properties_from_json(expected_json), _strip_doc_properties_from_json(actual_json)
+    )
+    return diff is None
 
-    return all(_is_expected_diff_line(line) for line in diff.splitlines())
+
+def _strip_doc_properties_from_json(json_string: str) -> str:
+    # Remove any properties named 'doc' from objects in the given JSON string.
+    dictionary = json.loads(json_string)
+    stripped = _strip_doc_properties_from_dict(dictionary)
+    return json.dumps(stripped)
 
 
-def _is_expected_diff_line(line: str) -> bool:
-    # ndiff prefix for matching lines and "hint" lines.
-    if line.startswith("  ") or line.startswith("? "):
-        return True
+def _strip_doc_properties_from_dict(dictionary: dict[str, object]) -> dict[str, object]:
+    # Recursively remove any properties named 'doc' from the given dict or any
+    # dicts in its values.
+    stripped: dict[str, object] = {}
+    for key, value in dictionary.items():
+        if key != "doc":
+            if isinstance(value, dict):
+                stripped[key] = _strip_doc_properties_from_dict(value)
+            else:
+                stripped[key] = value
 
-    # Lines containing only docstring changes.
-    if re.match(r'^[-+]\s+"doc":', line):
-        return True
-
-    # Empty line.
-    if line.strip() == "":
-        return True
-
-    return False
+    return stripped

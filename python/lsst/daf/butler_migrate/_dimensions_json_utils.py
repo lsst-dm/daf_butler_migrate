@@ -21,7 +21,6 @@
 
 import difflib
 import json
-from typing import Literal
 
 import yaml
 from lsst.resources import ResourcePath
@@ -67,9 +66,7 @@ def load_historical_dimension_universe_json(universe_version: int) -> str:
     return json.dumps(dimensions)
 
 
-def compare_json_strings(
-    expected: str, actual: str, diff_style: Literal["unified", "ndiff"] = "unified"
-) -> str | None:
+def compare_json_strings(expected: str, actual: str) -> str | None:
     """Compare two JSON strings and return a human-readable description of
     the differences.
 
@@ -79,8 +76,6 @@ def compare_json_strings(
         JSON-encoded string to use as the basis for comparison.
     actual : `str`
         JSON-encoded string to compare with the expected value.
-    diff_style : "unified" | "ndiff"
-        What type of diff to return.
 
     Returns
     -------
@@ -95,12 +90,7 @@ def compare_json_strings(
     if expected == actual:
         return None
 
-    if diff_style == "unified":
-        diff = difflib.unified_diff(expected.splitlines(), actual.splitlines(), lineterm="")
-    elif diff_style == "ndiff":
-        diff = difflib.ndiff(expected.splitlines(), actual.splitlines())
-    else:
-        raise ValueError(f"Unknown {diff_style=}")
+    diff = difflib.unified_diff(expected.splitlines(), actual.splitlines(), lineterm="")
     return "\n".join(diff)
 
 
