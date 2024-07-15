@@ -64,10 +64,14 @@ line_length = 110
 write_to = "python/lsst/daf/butler_migrate/version.py"
 
 [tool.ruff]
+target-version = "py311"
+line-length = 110
 exclude = [
     "__init__.py",
     "migrations/*/*.py",
 ]
+
+[tool.ruff.lint]
 ignore = [
     "N802",
     "N803",
@@ -85,7 +89,6 @@ ignore = [
     "D205",
     "D400",
 ]
-line-length = 110
 select = [
     "E",  # pycodestyle
     "F",  # pycodestyle
@@ -95,15 +98,14 @@ select = [
     "UP",
     "C4",
 ]
-target-version = "py311"
 extend-select = [
     "RUF100", # Warn about unused noqa
 ]
 
-[tool.ruff.pycodestyle]
+[tool.ruff.lint.pycodestyle]
 max-doc-length = 79
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.pytest.ini_options]
