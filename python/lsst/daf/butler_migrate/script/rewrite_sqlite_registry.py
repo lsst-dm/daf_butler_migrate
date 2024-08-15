@@ -27,10 +27,17 @@ import os
 import tempfile
 from collections import defaultdict
 
-from lsst.daf.butler import Butler, Config, DatasetAssociation, DatasetId, DatasetRef, SkyPixDimension
+from lsst.daf.butler import (
+    Butler,
+    CollectionType,
+    Config,
+    DatasetAssociation,
+    DatasetId,
+    DatasetRef,
+    SkyPixDimension,
+)
 from lsst.daf.butler.datastores.fileDatastore import FileDatastore
 from lsst.daf.butler.direct_butler import DirectButler
-from lsst.daf.butler.registry import CollectionType
 from lsst.daf.butler.registry.databases.sqlite import SqliteDatabase
 from lsst.daf.butler.registry.sql_registry import SqlRegistry
 from lsst.daf.butler.transfers import RepoExportContext
@@ -269,9 +276,7 @@ def transfer_non_datasets(source_butler: DirectButler, dest_butler: DirectButler
     # export/import.
     BackendClass = get_class_of(source_butler._config["repo_transfer_formats", "yaml", "export"])
     backend = BackendClass(yamlBuffer)
-    exporter = RepoExportContext(
-        source_butler._registry, source_butler._datastore, backend, directory=None, transfer=None
-    )
+    exporter = RepoExportContext(source_butler, backend, directory=None, transfer=None)
 
     # Export all the collections.
     for c in source_butler.registry.queryCollections(..., flattenChains=True, includeChains=True):
