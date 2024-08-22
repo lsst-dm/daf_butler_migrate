@@ -30,9 +30,7 @@ import sqlalchemy
 import yaml
 from lsst.daf.butler import Butler, Config
 from lsst.daf.butler.direct_butler import DirectButler
-from lsst.daf.butler.registry.sql_registry import SqlRegistry
 from lsst.daf.butler.tests.utils import makeTestTempDir, removeTestTempDir
-from lsst.daf.butler.transfers import YamlRepoImportBackend
 from lsst.daf.butler_migrate import butler_attributes, database, migrate, script
 from lsst.daf.butler_migrate._dimensions_json_utils import historical_dimensions_resource
 from lsst.daf.butler_migrate.revision import rev_id
@@ -159,13 +157,6 @@ class DimensionsJsonTestCase(TestCaseMixin):
             versions[_MANAGER], (_NAMESPACE, str(start_version - 1), _revision_id(start_version - 1))
         )
 
-    def load_data(self, registry: SqlRegistry, filename: str) -> None:
-        """Load registry test data from filename in data folder."""
-        with open(os.path.join(TESTDIR, "data", filename)) as stream:
-            backend = YamlRepoImportBackend(stream, registry)
-        backend.register()
-        backend.load(datastore=None)
-
     def test_upgrade_empty(self) -> None:
         """Simple test for incremental upgrades for all known versions. This
         only tests schema changes with empty registry. More specific test can
@@ -239,7 +230,7 @@ class DimensionsJsonTestCase(TestCaseMixin):
 
         butler = Butler(butler_root, writeable=True)  # type: ignore[abstract]
         assert isinstance(butler, DirectButler), "Only DirectButler is supported"
-        self.load_data(butler._registry, "records.yaml")
+        butler.import_(filename=os.path.join(TESTDIR, "data", "records.yaml"), without_datastore=True)
 
         # Check records for v0 attributes.
         records = list(butler.registry.queryDimensionRecords("visit"))
