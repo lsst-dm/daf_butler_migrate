@@ -25,19 +25,23 @@ jobs:
           channels: conda-forge,defaults
           channel-priority: strict
           show-channel-urls: true
-          miniforge-variant: Mambaforge
-          use-mamba: true
+
+      - name: Install postgres for testing
+        shell: bash -l {0}
+        run: |
+          conda install postgresql psycopg2
 
       - name: Update pip/wheel infrastructure
         shell: bash -l {0}
         run: |
-          mamba install -y -q pip wheel
+          conda install -y -q pip wheel
           pip install uv
 
       - name: Install dependencies
         shell: bash -l {0}
         run: |
           uv pip install -r requirements.txt
+          uv pip install testing.postgresql
 
       # We have two cores so we can speed up the testing with xdist
       - name: Install pytest packages
@@ -64,6 +68,7 @@ jobs:
           DAF_BUTLER_MIGRATE_MIGRATIONS: ./migrations
         run: |
           pytest -r a -v -n 3 --cov=lsst.daf.butler_migrate --cov=tests --cov-report=xml --cov-report=term --cov-branch
+          butler migrate -h
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v4
         with:
