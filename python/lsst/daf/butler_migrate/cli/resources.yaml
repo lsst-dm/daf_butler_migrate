@@ -1,4 +1,0 @@
-cmd:
-  import: lsst.daf.butler_migrate.cli.cmd
-  commands:
-    - migrate
