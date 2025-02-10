@@ -196,7 +196,7 @@ def transfer_everything(source_butler: DirectButler, dest_butler: DirectButler) 
     dest_refs = dest_butler.transfer_from(source_butler, source_refs, skip_missing=False)
 
     # Map source ID to destination ID.
-    source_to_dest = {source.id: dest for source, dest in zip(source_refs, dest_refs)}
+    source_to_dest = {source.id: dest for source, dest in zip(source_refs, dest_refs, strict=True)}
 
     # Create any dataset associations
     create_associations(source_butler, dest_butler, source_to_dest)
@@ -253,8 +253,7 @@ def create_associations(
                 dest_butler.registry.certify(collection, refs, timespan)
         else:
             raise RuntimeError(
-                f"Unexpected collection association for collection {collection}"
-                f" of type {collection_type}."
+                f"Unexpected collection association for collection {collection} of type {collection_type}."
             )
 
 

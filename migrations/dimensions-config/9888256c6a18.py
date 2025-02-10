@@ -6,6 +6,7 @@ Create Date: 2023-12-04 18:16:25.375102
 
 """
 from alembic import context
+
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 
 # revision identifiers, used by Alembic.

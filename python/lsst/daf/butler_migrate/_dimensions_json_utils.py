@@ -23,6 +23,7 @@ import difflib
 import json
 
 import yaml
+
 from lsst.resources import ResourcePath
 
 

@@ -14,6 +14,7 @@ from typing import Any, TypeAlias
 
 import sqlalchemy as sa
 from alembic import op
+
 from lsst.daf.butler import Timespan
 from lsst.daf.butler_migrate.migration_context import MigrationContext
 from lsst.daf.butler_migrate.naming import make_string_length_constraint

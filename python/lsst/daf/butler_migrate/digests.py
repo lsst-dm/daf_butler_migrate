@@ -35,7 +35,7 @@ def get_digest(
     tables: Iterable[sqlalchemy.schema.Table],
     dialect: sqlalchemy.engine.Dialect,
     *,
-    nullable_columns: set[str] = set(),
+    nullable_columns: set[str] | None = None,
 ) -> str:
     """Calculate digest for a schema based on list of tables schemas.
 
@@ -63,6 +63,8 @@ def get_digest(
     daf_butler method. Digest calculation probably needs an improvement, we
     need to revisit this at some point.
     """
+    if nullable_columns is None:
+        nullable_columns = set()
     md5 = hashlib.md5()
     tableSchemas = sorted(_tableSchemaRepr(table, dialect, nullable_columns) for table in tables)
     for tableRepr in tableSchemas:

@@ -22,6 +22,7 @@
 import unittest
 
 import sqlalchemy
+
 from lsst.daf.butler_migrate import digests
 
 

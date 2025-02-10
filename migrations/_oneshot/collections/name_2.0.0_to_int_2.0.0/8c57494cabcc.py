@@ -13,6 +13,7 @@ from typing import NamedTuple
 
 import sqlalchemy
 from alembic import context, op
+
 from lsst.daf.butler_migrate import naming
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 

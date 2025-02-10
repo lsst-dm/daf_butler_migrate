@@ -8,6 +8,7 @@ Create Date: 2022-05-13 14:38:35.806960
 from typing import Callable, Dict
 
 from alembic import context
+
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 
 # revision identifiers, used by Alembic.

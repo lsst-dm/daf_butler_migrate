@@ -29,6 +29,7 @@ from typing import cast
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
+
 from lsst.daf.butler import ButlerConfig, RegistryConfig
 
 from . import revision
@@ -243,8 +244,8 @@ class Database:
         # TODO: possible optimization to reuse a connection to database
         try:
             manager_versions = self.manager_versions(namespace)
-        except sqlalchemy.exc.OperationalError:
-            raise RevisionConsistencyError("butler_attributes table does not exist")
+        except sqlalchemy.exc.OperationalError as e:
+            raise RevisionConsistencyError("butler_attributes table does not exist") from e
         alembic_revisions = self.alembic_revisions()
 
         if manager_versions and not alembic_revisions:

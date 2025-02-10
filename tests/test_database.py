@@ -24,6 +24,7 @@ import unittest
 from collections.abc import Iterator
 
 import sqlalchemy
+
 from lsst.daf.butler_migrate import database, revision
 from lsst.utils.tests import temporaryDirectory
 
@@ -34,10 +35,7 @@ _queries_butler_attributes = [
         "INSERT INTO butler_attributes (name, value) "
         "VALUES ('config:registry.managers.manager1', 'pkg1.module1.Manager1') "
     ),
-    (
-        "INSERT INTO butler_attributes (name, value) "
-        "VALUES ('config:registry.managers.manager2', 'Manager2') "
-    ),
+    ("INSERT INTO butler_attributes (name, value) VALUES ('config:registry.managers.manager2', 'Manager2') "),
     "INSERT INTO butler_attributes (name, value) VALUES ('version:pkg1.module1.Manager1', '0.0.1')",
     "INSERT INTO butler_attributes (name, value) VALUES ('version:Manager2', '1.0.0')",
 ]

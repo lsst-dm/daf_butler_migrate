@@ -115,7 +115,6 @@ def update_day_obs(repo: str, instrument: str) -> None:
     # Work out the visits that need to be updated given the exposures we have
     # updated. Chunk the queries.
     for exposure_ids in chunk_iterable(exposures_to_be_updated, chunk_size=1_000):
-
         # If there are modified exposures associated visits will have to be
         # located and updated.
         visit_defs = butler.registry.queryDimensionRecords(
