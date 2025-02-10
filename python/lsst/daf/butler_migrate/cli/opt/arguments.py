@@ -22,14 +22,14 @@
 from __future__ import annotations
 
 __all__ = [
-    "tree_name_argument",
     "class_argument",
-    "version_argument",
-    "revision_argument",
+    "instrument_argument",
     "manager_argument",
     "namespace_argument",
+    "revision_argument",
     "tables_argument",
-    "instrument_argument",
+    "tree_name_argument",
+    "version_argument",
 ]
 
 from lsst.daf.butler.cli.utils import MWArgumentDecorator
