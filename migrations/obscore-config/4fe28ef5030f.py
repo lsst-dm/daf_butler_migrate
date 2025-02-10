@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 from alembic import context, op
+
 from lsst.daf.butler.registry.sql_registry import SqlRegistry
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 from lsst.daf.butler_migrate.registry import make_registry

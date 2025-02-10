@@ -24,6 +24,7 @@ import unittest
 from collections.abc import Iterator
 
 import sqlalchemy
+
 from lsst.daf.butler_migrate import database, revision
 from lsst.utils.tests import temporaryDirectory
 

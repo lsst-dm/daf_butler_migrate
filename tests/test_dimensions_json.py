@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Any
 
 import sqlalchemy
 import yaml
+
 from lsst.daf.butler import Butler, Config
 from lsst.daf.butler.direct_butler import DirectButler
 from lsst.daf.butler.tests.utils import makeTestTempDir, removeTestTempDir

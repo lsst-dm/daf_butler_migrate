@@ -24,8 +24,9 @@ from __future__ import annotations
 from typing import Any
 
 import sqlalchemy as sa
-from lsst.daf.butler import Timespan
 from sqlalchemy.dialects.postgresql import INT8RANGE, Range
+
+from lsst.daf.butler import Timespan
 
 
 def create_timespan_column_definitions(column_name: str, dialect: str) -> list[sa.Column]:

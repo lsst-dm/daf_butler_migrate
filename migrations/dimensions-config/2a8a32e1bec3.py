@@ -10,6 +10,7 @@ import logging
 
 import sqlalchemy
 from alembic import context, op
+
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 
 # revision identifiers, used by Alembic.

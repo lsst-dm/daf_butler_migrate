@@ -14,8 +14,9 @@ from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
 
 import sqlalchemy as sa
 from alembic import context, op
-from lsst.daf.butler_migrate.digests import get_digest
 from sqlalchemy.dialects.postgresql import UUID
+
+from lsst.daf.butler_migrate.digests import get_digest
 
 # revision identifiers, used by Alembic.
 revision = "2101fbf51ad3"

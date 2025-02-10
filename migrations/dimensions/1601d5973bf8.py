@@ -7,6 +7,7 @@ Create Date: 2021-09-01 09:43:25.448091
 """
 import sqlalchemy as sa
 from alembic import context, op
+
 from lsst.daf.butler_migrate.butler_attributes import ButlerAttributes
 from lsst.daf.butler_migrate.shrink import shrinkDatabaseEntityName
 

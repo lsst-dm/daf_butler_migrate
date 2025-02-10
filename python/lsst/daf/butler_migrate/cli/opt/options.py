@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import click
+
 from lsst.daf.butler.cli.utils import split_kv
 
 from ... import migrate

@@ -29,6 +29,7 @@ from typing import cast
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
+
 from lsst.daf.butler import ButlerConfig, RegistryConfig
 
 from . import revision
