@@ -253,8 +253,7 @@ def create_associations(
                 dest_butler.registry.certify(collection, refs, timespan)
         else:
             raise RuntimeError(
-                f"Unexpected collection association for collection {collection}"
-                f" of type {collection_type}."
+                f"Unexpected collection association for collection {collection} of type {collection_type}."
             )
 
 
