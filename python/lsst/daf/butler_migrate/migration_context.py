@@ -23,6 +23,7 @@ from __future__ import annotations
 
 __all__ = ("MigrationContext",)
 
+from typing import Any, Literal
 
 import alembic
 import sqlalchemy
@@ -33,9 +34,18 @@ from .butler_attributes import ButlerAttributes
 class MigrationContext:
     """Provides access to commonly-needed objects derived from the alembic
     migration context.
+
+    Parameters
+    ----------
+    manager : `str`, optional
+        Full name of manager class, has to be provided if the instance is used
+        as context manager.
+    version : `str`, optional
+        Final version to store in ``butler_attributes`` table, has to be
+        provided if the instance is used as context manager.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, manager: str | None = None, version: str | None = None) -> None:
         self.mig_context = (
             alembic.context.get_context()
         )  #: Alembic migration context for the DB being migrated.
@@ -51,6 +61,8 @@ class MigrationContext:
             schema=self.schema
         )  # SQLAlchemy MetaData object for the DB being migrated.
         self.attributes = ButlerAttributes(self.bind, self.schema)
+        self._manager = manager
+        self._version = version
 
     def get_table(self, table_name: str) -> sqlalchemy.Table:
         """Create a SQLAlchemy table object for the current database.
@@ -66,3 +78,22 @@ class MigrationContext:
             Table object.
         """
         return sqlalchemy.schema.Table(table_name, self.metadata, autoload_with=self.bind, schema=self.schema)
+
+    def __enter__(self) -> MigrationContext:
+        """Enter the context, on exit it will store new manager version in
+        ``butler_attributes`` table.
+
+        Notes
+        -----
+        This context manager cannot be used with dimensions-config tree.
+        """
+        if not (self._manager and self._version):
+            raise ValueError("Manager name and version number has to be provided in constructor.")
+        return self
+
+    def __exit__(self, exc_type: type | None, exc_val: Exception | None, exc_tb: Any) -> Literal[False]:
+        """Store new manager version if no exceptions happened."""
+        if exc_type is None:
+            assert self._manager is not None and self._version is not None
+            self.attributes.update_manager_version(self._manager, self._version)
+        return False

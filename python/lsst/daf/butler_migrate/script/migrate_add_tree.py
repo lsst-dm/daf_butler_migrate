@@ -83,6 +83,8 @@ def migrate_add_tree(tree_name: str, mig_path: str, one_shot: bool) -> None:
         raise ValueError(f"Version tree {tree_name!r} already exists in {tree_folder}")
 
     cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
+    # Pass tree name to template.
+    cfg.attributes["tree_name"] = tree_name
 
     # may need to initialize the whole shebang
     alembic_folder = trees.alembic_folder(relative=False)
