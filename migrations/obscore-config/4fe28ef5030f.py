@@ -139,7 +139,7 @@ def _read_obscore_config() -> dict:
 
 
 def _make_obscore_table(obscore_config: dict) -> None:
-    """Create obecore table.
+    """Create obscore table.
 
     Parameters
     ----------
