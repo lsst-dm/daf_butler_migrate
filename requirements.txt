@@ -1,6 +1,7 @@
 click >7.0
 sqlalchemy
-alembic
+alembic != 1.15.2
+testing.postgresql
 lsst-resources @ git+https://github.com/lsst/resources@main
 lsst-utils @ git+https://github.com/lsst/utils@main
 lsst-daf-butler @ git+https://github.com/lsst/daf_butler@main

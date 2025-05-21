@@ -3,7 +3,6 @@
 Revision ID: 4fe28ef5030f
 Revises: 2daeabfb5019
 Create Date: 2023-02-02 10:28:46.217250
-
 """
 
 import json
@@ -71,7 +70,13 @@ def downgrade() -> None:
 
 
 def _migrate(obscore_config: dict | None) -> None:
-    """Upgrade or downgrade schema."""
+    """Upgrade or downgrade schema.
+
+    Parameters
+    ----------
+    obscore_config : `dict`
+        Obscore configuration.
+    """
 
     mig_context = context.get_context()
     schema = mig_context.version_table_schema
@@ -134,7 +139,13 @@ def _read_obscore_config() -> dict:
 
 
 def _make_obscore_table(obscore_config: dict) -> None:
-    """Create obecore table."""
+    """Create obscore table.
+
+    Parameters
+    ----------
+    obscore_config : `dict`
+        Obscore configuration.
+    """
 
     mig_context = context.get_context()
     schema = mig_context.version_table_schema
@@ -166,10 +177,11 @@ def _make_obscore_table(obscore_config: dict) -> None:
             config=obscore_config,
             datasets=managers.datasets.__class__,
             dimensions=managers.dimensions,
+            column_type_info=registry._managers.column_types,
         )
     # Note that we are using bind from migration context, and not from
     # Registry. This should work in general, but watch for any surprises.
     # Reflecting metadata is needed for foreign key in obscore table.
     assert database._metadata is not None
-    database._metadata.reflect(bind, schema=schema)
+    database._metadata._metadata.reflect(bind, schema=schema)
     manager.table.create(bind)

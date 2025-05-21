@@ -27,7 +27,6 @@ def run_migrations_offline() -> None:
 
     Calls to context.execute() here emit the given string to the
     script output.
-
     """
     url = config.get_main_option("sqlalchemy.url")
     schema = config.get_section_option("daf_butler_migrate", "schema")
@@ -48,7 +47,6 @@ def run_migrations_online() -> None:
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
     config_dict = config.get_section(config.config_ini_section)
     assert config_dict is not None, "Expect non-empty configuration"

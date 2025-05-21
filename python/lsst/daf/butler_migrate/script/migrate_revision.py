@@ -92,6 +92,10 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str, version:
     cfg = config.MigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
 
+    # Pass tree name to template.
+    cfg.attributes["tree_name"] = tree_name
+    cfg.attributes["new_version"] = version
+
     # make sure that tree root is defined
     root = revision.rev_id(tree_name)
     if not _revision_exists(scripts, root):
@@ -112,7 +116,10 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str, version:
 
     # now can make actual revision
     rev_id = revision.rev_id(tree_name, manager_class, version)
-    message = f"Migration script for {manager_class} {version}."
+    if tree_name == "dimensions-config":
+        message = f"Migration script for dimensions.yaml namespace={manager_class} version={version}."
+    else:
+        message = f"Migration script for {manager_class} {version}."
     command.revision(
         cfg,
         head=head,
@@ -127,6 +134,10 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str, version:
 def _migrate_revision_one_shot(mig_path: str, tree_name: str, manager_class: str, version: str) -> None:
     cfg = config.MigAlembicConfig.from_mig_path(mig_path, single_tree=tree_name)
     scripts = ScriptDirectory.from_config(cfg)
+
+    # Pass tree name to template.
+    cfg.attributes["tree_name"] = tree_name
+    cfg.attributes["new_version"] = version
 
     # We want to keep trees in separate directories
     migrate_trees = migrate.MigrationTrees(mig_path)

@@ -7,5 +7,15 @@ on:
   pull_request:
 
 jobs:
-  call-workflow:
+
+  # Mypy does not like repeating file names, have to check _oneshot
+  # separately from everyhting else.
+  mypy-almost-all:
     uses: lsst/rubin_workflows/.github/workflows/mypy.yaml@main
+    with:
+      folders: "python tests migrations/_alembic migrations/[a-z]*"
+
+  mypy-oneshot:
+    uses: lsst/rubin_workflows/.github/workflows/mypy.yaml@main
+    with:
+      folders: "python migrations/_oneshot"

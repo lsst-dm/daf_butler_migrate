@@ -150,4 +150,5 @@ checks = [
 exclude = [
     "^test_.*",  # Do not test docstrings in test code.
     '^commands\.',  # Click docstrings, not numpydoc
+    '\.__exit__',  # Do not check docstrings in context methods.
 ]
