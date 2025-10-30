@@ -6,7 +6,6 @@ Create Date: 2022-05-16 12:11:17.906600
 
 """
 import logging
-from typing import Dict, List, Optional
 
 import sqlalchemy as sa
 from alembic import context, op
@@ -68,12 +67,12 @@ def downgrade() -> None:
 
 def _FKConstraint(
     src_table: str,
-    src_columns: List[str],
+    src_columns: list[str],
     tgt_table: str,
-    tgt_columns: List[str],
+    tgt_columns: list[str],
     bind: sa.engine.Connection,
-    schema: Optional[str] = None,
-    ondelete: Optional[str] = None,
+    schema: str | None = None,
+    ondelete: str | None = None,
 ) -> sa.schema.ForeignKeyConstraint:
     """Create foreign key constraint."""
     fk_name = "_".join(["fkey", src_table, tgt_table] + tgt_columns + src_columns)
@@ -281,7 +280,7 @@ def _migrate_dimensions_json() -> None:
     assert mig_context.bind is not None
     attributes = ButlerAttributes(mig_context.bind, schema)
 
-    def update_config(config: Dict) -> Dict:
+    def update_config(config: dict) -> dict:
         config["version"] = 2
 
         instrument = config["elements"]["instrument"]
