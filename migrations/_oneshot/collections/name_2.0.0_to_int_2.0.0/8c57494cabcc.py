@@ -194,7 +194,7 @@ def upgrade() -> None:
     _update_butler_attributes(bind, schema)
 
 
-def _all_tables(schema: str) -> list[str]:
+def _all_tables(schema: str | None) -> list[str]:
     """Return list of table names that should be migrated.
 
     Returned tables are ordered based on their FK (in CREATE order).
@@ -210,7 +210,7 @@ def _all_tables(schema: str) -> list[str]:
     return tables
 
 
-def _lock_tables(tables: list[str], schema: str) -> None:
+def _lock_tables(tables: list[str], schema: str | None) -> None:
     """Lock all tables that need to be migrated to avoid conflicts."""
 
     connection = op.get_bind()
@@ -224,7 +224,7 @@ def _lock_tables(tables: list[str], schema: str) -> None:
         connection.execute(sqlalchemy.text(query))
 
 
-def _reflect_tables(schema: str, table_names: list[str]) -> dict[str, TableInfo]:
+def _reflect_tables(schema: str | None, table_names: list[str]) -> dict[str, TableInfo]:
     """Extract constraints and indices info for specified tables.
 
     Parameters

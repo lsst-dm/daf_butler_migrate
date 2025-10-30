@@ -109,7 +109,7 @@ def _migrate(old_version: int, new_version: int, size: int) -> None:
     attributes.update_dimensions_json(_update_config)
 
 
-def _columns_to_migrate(schema: str) -> list[tuple[str, str]]:
+def _columns_to_migrate(schema: str | None) -> list[tuple[str, str]]:
     """Return list of table and column names that will be migrated."""
     result: list[tuple[str, str]] = []
 
@@ -146,7 +146,7 @@ def _columns_to_migrate(schema: str) -> list[tuple[str, str]]:
     return result
 
 
-def _lock_tables(tables: list[str], schema: str) -> None:
+def _lock_tables(tables: list[str], schema: str | None) -> None:
     """Lock all tables that need to be migrated to avoid conflicts."""
 
     connection = op.get_bind()

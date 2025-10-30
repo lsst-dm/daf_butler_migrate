@@ -170,7 +170,7 @@ def downgrade() -> None:
     raise NotImplementedError()
 
 
-def _tables_to_migrate(schema: str) -> list[str]:
+def _tables_to_migrate(schema: str | None) -> list[str]:
     """Return list of table names that should be migrated.
 
     Tables are ordered based on their FK relation.
@@ -185,7 +185,7 @@ def _tables_to_migrate(schema: str) -> list[str]:
     return tables
 
 
-def _get_table_info(schema: str, table_names: list[str]) -> dict[str, TableInfo]:
+def _get_table_info(schema: str | None, table_names: list[str]) -> dict[str, TableInfo]:
     """Extract constraints and indices info for all tables.
 
     This only returns indices and constraints that use dataset id column.
@@ -225,7 +225,7 @@ def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
     return tables.pop()
 
 
-def _make_id_map(schema: str, uuid_type: Any) -> None:
+def _make_id_map(schema: str | None, uuid_type: Any) -> None:
     """Create id -> uuid mapping table."""
     _LOG.info("creating %s table", ID_MAP_TABLE_NAME)
     op.create_table(
@@ -405,7 +405,7 @@ def _id_column_name(table_name: str) -> str:
     return "id" if table_name == "dataset" else "dataset_id"
 
 
-def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
+def _add_uuid_column(table_name: str, uuid_type: Any, schema: str | None) -> None:
     """Add new uuid column to the table, column is nullable initially."""
     column_name = _id_column_name(table_name) + "_uuid"
     _LOG.debug("Adding column %r to table %r", column_name, table_name)
@@ -440,7 +440,7 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
     _LOG.debug("Filled uuids in table %r", table.name)
 
 
-def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
+def _drop_columns(table_name: str, table_info: TableInfo, schema: str | None) -> None:
     """Drop existing ID column from a table, removing also aal indices and
     constraints that use it.
     """
@@ -503,7 +503,7 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
             op.execute(sql)
 
 
-def _rename_column(table_name: str, schema: str) -> None:
+def _rename_column(table_name: str, schema: str | None) -> None:
     """Rename UUID column to its final name, make it NOT NULL."""
     id_col = _id_column_name(table_name)
     _LOG.debug("Renaming uuid column in table %s to %s", table_name, id_col)
@@ -514,7 +514,7 @@ def _rename_column(table_name: str, schema: str) -> None:
         )
 
 
-def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
+def _make_indices(table_name: str, table_info: TableInfo, schema: str | None) -> None:
     """Re-create all constraint and indices on a table using new UUID column."""
 
     with op.batch_alter_table(table_name, schema) as batch_op:
