@@ -42,7 +42,6 @@ daf_butler_migrate = "lsst.daf.butler_migrate.cli:get_cli_subcommands"
 [project.optional-dependencies]
 test = [
     "pytest >= 3.2",
-    "pytest-openfiles >= 0.5.0"
 ]
 
 [tool.setuptools.packages.find]
