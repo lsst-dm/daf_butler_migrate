@@ -1,7 +1,7 @@
 """Sphinx configuration file for an LSST stack package.
 This configuration only affects single-package Sphinx documentation builds.
 For more information, see:
-https://developer.lsst.io/stack/building-single-package-docs.html
+https://developer.lsst.io/stack/building-single-package-docs.html .
 """
 
 # flake8: noqa
@@ -13,3 +13,10 @@ html_theme_options["logotext"] = project
 html_title = project
 html_short_title = project
 exclude_patterns = ["changes/*"]
+
+# As a temporary hack until we move to documenteer 2 delete scipy
+# (since it no longer works)
+try:
+    del intersphinx_mapping["scipy"]  # noqa: F405
+except KeyError:
+    pass

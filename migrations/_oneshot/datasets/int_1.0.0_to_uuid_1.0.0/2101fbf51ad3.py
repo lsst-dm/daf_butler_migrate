@@ -10,7 +10,8 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
+from typing import Any, NamedTuple
+from collections.abc import Iterator
 
 import sqlalchemy as sa
 from alembic import context, op
@@ -58,10 +59,10 @@ class TableInfo(NamedTuple):
     Information only includes columns that are migrated.
     """
 
-    primary_key: Optional[Dict]
-    foreign_keys: List[Dict]
-    unique_constraints: List[Dict]
-    indices: List[Dict]
+    primary_key: dict | None
+    foreign_keys: list[dict]
+    unique_constraints: list[dict]
+    indices: list[dict]
 
 
 def upgrade() -> None:
@@ -169,7 +170,7 @@ def downgrade() -> None:
     raise NotImplementedError()
 
 
-def _tables_to_migrate(schema: str) -> List[str]:
+def _tables_to_migrate(schema: str | None) -> list[str]:
     """Return list of table names that should be migrated.
 
     Tables are ordered based on their FK relation.
@@ -184,14 +185,14 @@ def _tables_to_migrate(schema: str) -> List[str]:
     return tables
 
 
-def _get_table_info(schema: str, table_names: List[str]) -> Dict[str, TableInfo]:
+def _get_table_info(schema: str | None, table_names: list[str]) -> dict[str, TableInfo]:
     """Extract constraints and indices info for all tables.
 
     This only returns indices and constraints that use dataset id column.
     """
     inspector = sa.inspect(op.get_bind())
 
-    table_info: Dict[str, TableInfo] = {}
+    table_info: dict[str, TableInfo] = {}
     for table in table_names:
         id_col = _id_column_name(table)
 
@@ -224,7 +225,7 @@ def _get_table(metadata: sa.schema.MetaData, name: str) -> sa.schema.Table:
     return tables.pop()
 
 
-def _make_id_map(schema: str, uuid_type: Any) -> None:
+def _make_id_map(schema: str | None, uuid_type: Any) -> None:
     """Create id -> uuid mapping table."""
     _LOG.info("creating %s table", ID_MAP_TABLE_NAME)
     op.create_table(
@@ -243,7 +244,7 @@ def _fill_id_map(bind: sa.engine.Connection, metadata: sa.schema.MetaData) -> No
 
     start_time = time.time()
     count = 0
-    batch: List[Dict[str, Any]] = []
+    batch: list[dict[str, Any]] = []
     for run_name, dstype_name, dataset_id, dataId in _gen_refs(bind, metadata):
         dataset_uuid = _makeDatasetId(run_name, dstype_name, dataId)
         # _LOG.debug("dataset_id: %r, run_name: %r, dstype_name: %r , dataId: %r, dataset_uuid: %r",
@@ -274,7 +275,7 @@ def _fill_id_map(bind: sa.engine.Connection, metadata: sa.schema.MetaData) -> No
 
 def _gen_refs(
     bind: sa.engine.Connection, metadata: sa.schema.MetaData
-) -> Iterator[Tuple[str, str, int, Dict[str, Any]]]:
+) -> Iterator[tuple[str, str, int, dict[str, Any]]]:
     """Generate "refs" and run names for all datasets.
 
     Yields
@@ -369,7 +370,7 @@ def _gen_refs(
             yield run_name, dstype_name, dataset_id, dataId
 
 
-def _makeDatasetId(run_name: str, dstype_name: str, dataId: Dict[str, Any]) -> uuid.UUID:
+def _makeDatasetId(run_name: str, dstype_name: str, dataId: dict[str, Any]) -> uuid.UUID:
     """Generate dataset ID for a dataset.
 
     This is a copy of the code from registry, has to produce identical
@@ -386,7 +387,7 @@ def _makeDatasetId(run_name: str, dstype_name: str, dataId: Dict[str, Any]) -> u
     else:
         # WARNING: If you modify this code make sure that the order of
         # items in the `items` list below never changes.
-        items: List[Tuple[str, str]] = [
+        items: list[tuple[str, str]] = [
             ("dataset_type", dstype_name),
             ("run", run_name),
         ]
@@ -404,7 +405,7 @@ def _id_column_name(table_name: str) -> str:
     return "id" if table_name == "dataset" else "dataset_id"
 
 
-def _add_uuid_column(table_name: str, uuid_type: Any, schema: str) -> None:
+def _add_uuid_column(table_name: str, uuid_type: Any, schema: str | None) -> None:
     """Add new uuid column to the table, column is nullable initially."""
     column_name = _id_column_name(table_name) + "_uuid"
     _LOG.debug("Adding column %r to table %r", column_name, table_name)
@@ -439,7 +440,7 @@ def _fill_uuid_column(table: sa.schema.Table, map_table: sa.schema.Table) -> Non
     _LOG.debug("Filled uuids in table %r", table.name)
 
 
-def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
+def _drop_columns(table_name: str, table_info: TableInfo, schema: str | None) -> None:
     """Drop existing ID column from a table, removing also aal indices and
     constraints that use it.
     """
@@ -502,7 +503,7 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str) -> None:
             op.execute(sql)
 
 
-def _rename_column(table_name: str, schema: str) -> None:
+def _rename_column(table_name: str, schema: str | None) -> None:
     """Rename UUID column to its final name, make it NOT NULL."""
     id_col = _id_column_name(table_name)
     _LOG.debug("Renaming uuid column in table %s to %s", table_name, id_col)
@@ -513,7 +514,7 @@ def _rename_column(table_name: str, schema: str) -> None:
         )
 
 
-def _make_indices(table_name: str, table_info: TableInfo, schema: str) -> None:
+def _make_indices(table_name: str, table_info: TableInfo, schema: str | None) -> None:
     """Re-create all constraint and indices on a table using new UUID column."""
 
     with op.batch_alter_table(table_name, schema) as batch_op:

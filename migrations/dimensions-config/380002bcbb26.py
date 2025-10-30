@@ -5,7 +5,7 @@ Revises: f3bcee34f344
 Create Date: 2022-05-13 14:38:35.806960
 
 """
-from typing import Callable, Dict
+from collections.abc import Callable
 
 from alembic import context
 
@@ -33,7 +33,7 @@ def upgrade() -> None:
 
     """
 
-    def update_config(config: Dict) -> Dict:
+    def update_config(config: dict) -> dict:
         config["version"] = 1
         config["namespace"] = _NAMESPACE
         config["skypix"]["healpix"] = {
@@ -50,7 +50,7 @@ def downgrade() -> None:
     `upgrade`.
     """
 
-    def update_config(config: Dict) -> Dict:
+    def update_config(config: dict) -> dict:
         config["version"] = 0
         del config["namespace"]
         del config["skypix"]["healpix"]
@@ -59,7 +59,7 @@ def downgrade() -> None:
     _migrate(update_config)
 
 
-def _migrate(update_config: Callable[[Dict], Dict]) -> None:
+def _migrate(update_config: Callable[[dict], dict]) -> None:
     mig_context = context.get_context()
 
     # When we use schemas in postgres then all tables belong to the same schema

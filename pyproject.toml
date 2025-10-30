@@ -4,19 +4,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lsst-daf-butler-migrate"
+requires-python = ">=3.11.0"
 description = "Tooling for migrating schemas in butler repositories."
-license = {text = "GPLv3+ License"}
+license = "GPL-3.0-or-later"
+license-files = ["COPYRIGHT", "LICENSE"]
 readme = "README.md"
 authors = [
     {name="Rubin Observatory Data Management", email="dm-admin@lists.lsst.org"},
 ]
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Astronomy",
 ]
 keywords = ["lsst"]
@@ -39,7 +42,6 @@ daf_butler_migrate = "lsst.daf.butler_migrate.cli:get_cli_subcommands"
 [project.optional-dependencies]
 test = [
     "pytest >= 3.2",
-    "pytest-openfiles >= 0.5.0"
 ]
 
 [tool.setuptools.packages.find]
@@ -47,7 +49,6 @@ where = ["python"]
 
 [tool.setuptools]
 zip-safe = true
-license-files = ["COPYRIGHT", "LICENSE"]
 
 [tool.setuptools.package-data]
 "lsst.daf.butler_migrate" = ["py.typed", "cli/resources.yaml"]
