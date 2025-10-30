@@ -14,7 +14,7 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Need to clone everything for the git tags.
           fetch-depth: 0
@@ -70,7 +70,7 @@ jobs:
           pytest -r a -v -n 3 --cov=lsst.daf.butler_migrate --cov=tests --cov-report=xml --cov-report=term --cov-branch
           butler migrate -h
       - name: Upload coverage to codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
