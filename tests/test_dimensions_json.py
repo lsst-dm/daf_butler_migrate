@@ -229,7 +229,8 @@ class DimensionsJsonTestCase(TestCaseMixin):
         versions = db.manager_versions(_NAMESPACE)
         self.assertEqual(versions[_MANAGER], (_NAMESPACE, "0", _revision_id(0)))
 
-        butler = Butler(butler_root, writeable=True)  # type: ignore[abstract]
+        butler = Butler.from_config(butler_root, writeable=True)
+        self.enterContext(butler)
         assert isinstance(butler, DirectButler), "Only DirectButler is supported"
         butler.import_(filename=os.path.join(TESTDIR, "data", "records.yaml"), without_datastore=True)
 
@@ -273,7 +274,8 @@ class DimensionsJsonTestCase(TestCaseMixin):
         versions = db.manager_versions()
         self.assertEqual(versions[_MANAGER], (_NAMESPACE, "2", _revision_id(2)))
 
-        butler = Butler(butler_root, writeable=False)  # type: ignore[abstract]
+        butler = Butler.from_config(butler_root, writeable=False)
+        self.enterContext(butler)
 
         # Check records for v2 attributes.
         records = list(butler.registry.queryDimensionRecords("instrument"))

@@ -64,14 +64,18 @@ def rewrite_sqlite_registry(source: str) -> None:
     """
     # Create the source butler early so we can ask it questions
     # without assuming things.
-    source_butler = Butler.from_config(source, writeable=False)
-    assert isinstance(source_butler, DirectButler)
-    assert isinstance(source_butler._registry, SqlRegistry), "Expecting SqlRegistry instance"
+    with Butler.from_config(source, writeable=False) as source_butler:
+        assert isinstance(source_butler, DirectButler)
+        assert isinstance(source_butler._registry, SqlRegistry), "Expecting SqlRegistry instance"
 
-    # Check that we are really working with a SQLite database.
-    if not isinstance(source_butler._registry._db, SqliteDatabase):
-        raise RuntimeError("This command can only be used on SQLite registries.")
+        # Check that we are really working with a SQLite database.
+        if not isinstance(source_butler._registry._db, SqliteDatabase):
+            raise RuntimeError("This command can only be used on SQLite registries.")
 
+        _rewrite_sqlite_registry(source_butler)
+
+
+def _rewrite_sqlite_registry(source_butler: DirectButler) -> None:
     # The source butler knows where its config came from.
     source_config_uri = source_butler._config.configFile
     assert source_config_uri is not None, "Config file must not be None"
