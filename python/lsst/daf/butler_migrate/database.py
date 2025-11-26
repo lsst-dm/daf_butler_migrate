@@ -24,8 +24,8 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Iterable, Iterator, Mapping
-from contextlib import contextmanager
-from typing import cast
+from contextlib import AbstractContextManager, contextmanager
+from typing import Any, Literal, Self, cast
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
@@ -43,7 +43,7 @@ class RevisionConsistencyError(Exception):
     """
 
 
-class Database:
+class Database(AbstractContextManager):
     """Class implementing methods for database access needed for migrations.
 
     Parameters
@@ -69,6 +69,7 @@ class Database:
     def __init__(self, db_url: sqlalchemy.engine.url.URL, schema: str | None = None):
         self._db_url = db_url
         self._schema = schema
+        self._engine: sqlalchemy.engine.Engine | None = None
 
     @classmethod
     def from_repo(cls, repo: str) -> Database:
@@ -100,12 +101,34 @@ class Database:
         """Schema (namespace) name (`str`)."""
         return self._schema
 
+    @property
+    def engine(self) -> sqlalchemy.engine.Engine:
+        """Cached sqlalchemy Engine."""
+        if self._engine is None:
+            self._engine = sqlalchemy.engine.create_engine(self._db_url)
+        return self._engine
+
     @contextmanager
     def connect(self) -> Iterator[sqlalchemy.engine.Connection]:
         """Context manager for database connection."""
-        engine = sqlalchemy.engine.create_engine(self._db_url)
-        with engine.connect() as connection:
+        with self.engine.connect() as connection:
             yield connection
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+        try:
+            self.close()
+        except Exception:
+            _LOG.exception("An exception occurred during Database.close()")
+        return False
+
+    def close(self) -> None:
+        """Cleanup connection pool."""
+        if self._engine is not None:
+            self._engine.dispose()
+            self._engine = None
 
     def dimensions_namespace(self) -> str | None:
         """Return dimensions namespace from a stored configuration.
@@ -115,8 +138,6 @@ class Database:
         namespace: `str` or `None`
             Dimensions namespace or `None` if not defined.
         """
-        engine = sqlalchemy.engine.create_engine(self._db_url)
-
         meta = sqlalchemy.schema.MetaData(schema=self._schema)
         table = sqlalchemy.schema.Table(
             "butler_attributes",
@@ -126,7 +147,7 @@ class Database:
         )
 
         sql = sqlalchemy.sql.select(table.columns.value).where(table.columns.name == self.dimensions_json_key)
-        with engine.connect() as connection:
+        with self.engine.connect() as connection:
             result = connection.execute(sql)
             row = result.fetchone()
             if row is None:
@@ -150,8 +171,6 @@ class Database:
             tuple consisting of manager class name (including package/module),
             version string in X.Y.Z format, and revision ID string/hash.
         """
-        engine = sqlalchemy.engine.create_engine(self._db_url)
-
         meta = sqlalchemy.schema.MetaData(schema=self._schema)
         table = sqlalchemy.schema.Table(
             "butler_attributes",
@@ -164,7 +183,7 @@ class Database:
         managers: dict[str, str] = {}
         versions: dict[str, str] = {}
         sql = sqlalchemy.sql.select(table.columns.name, table.columns.value)
-        with engine.connect() as connection:
+        with self.engine.connect() as connection:
             result = connection.execute(sql)
             for name, value in result:
                 if name.startswith("config:registry.managers."):
@@ -211,8 +230,7 @@ class Database:
             Returned list is empty if alembic version table does not exist or
             is empty.
         """
-        engine = sqlalchemy.engine.create_engine(self._db_url)
-        with engine.connect() as connection:
+        with self.engine.connect() as connection:
             ctx = MigrationContext.configure(
                 connection=connection, opts={"version_table_schema": self._schema}
             )
@@ -286,8 +304,7 @@ class Database:
             List of the tables, if missing or empty then schema for all tables
             is printed.
         """
-        engine = sqlalchemy.engine.create_engine(self._db_url)
-        inspector = sqlalchemy.inspect(engine)
+        inspector = sqlalchemy.inspect(self.engine)
         table_names = sorted(inspector.get_table_names(schema=self._schema))
         for table in table_names:
             if tables and table not in tables:

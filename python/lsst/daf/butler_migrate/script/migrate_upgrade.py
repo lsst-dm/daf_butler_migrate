@@ -62,30 +62,29 @@ def migrate_upgrade(
     options : `dict` [ `str`, `str` ] or `None`
         Options to select.
     """
-    db = database.Database.from_repo(repo)
+    with database.Database.from_repo(repo) as db:
+        if namespace is None and db.dimensions_namespace() is None:
+            raise ValueError(
+                "The `--namespace` option is required when namespace is missing from"
+                " stored dimensions configuration"
+            )
 
-    if namespace is None and db.dimensions_namespace() is None:
-        raise ValueError(
-            "The `--namespace` option is required when namespace is missing from"
-            " stored dimensions configuration"
+        # Check that alembic versions exist in database, we do not support
+        # migrations from empty state.
+        if not db.alembic_revisions():
+            raise ValueError(
+                "Alembic version table does not exist, you may need to run `butler migrate stamp` first."
+            )
+
+        one_shot_arg: str | None = None
+        if one_shot_tree:
+            one_shot_arg = one_shot_tree
+        cfg = config.MigAlembicConfig.from_mig_path(
+            mig_path, repository=repo, db=db, one_shot_tree=one_shot_arg, migration_options=options
         )
 
-    # Check that alembic versions exist in database, we do not support
-    # migrations from empty state.
-    if not db.alembic_revisions():
-        raise ValueError(
-            "Alembic version table does not exist, you may need to run `butler migrate stamp` first."
-        )
+        # check that alembic versions are consistent with butler
+        script_info = scripts.Scripts(cfg)
+        db.validate_revisions(namespace, script_info.base_revisions())
 
-    one_shot_arg: str | None = None
-    if one_shot_tree:
-        one_shot_arg = one_shot_tree
-    cfg = config.MigAlembicConfig.from_mig_path(
-        mig_path, repository=repo, db=db, one_shot_tree=one_shot_arg, migration_options=options
-    )
-
-    # check that alembic versions are consistent with butler
-    script_info = scripts.Scripts(cfg)
-    db.validate_revisions(namespace, script_info.base_revisions())
-
-    command.upgrade(cfg, revision, sql=sql)
+        command.upgrade(cfg, revision, sql=sql)

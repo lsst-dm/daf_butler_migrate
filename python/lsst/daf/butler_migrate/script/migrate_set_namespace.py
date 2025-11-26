@@ -44,27 +44,27 @@ def migrate_set_namespace(repo: str, namespace: str | None, update: bool) -> Non
     update : `bool`
         Allows update of the existing namespace.
     """
-    db = database.Database.from_repo(repo)
-    db_namespace = db.dimensions_namespace()
+    with database.Database.from_repo(repo) as db:
+        db_namespace = db.dimensions_namespace()
 
-    if not namespace:
-        # Print current value
-        if not db_namespace:
-            print("No namespace defined in dimensions configuration.")
+        if not namespace:
+            # Print current value
+            if not db_namespace:
+                print("No namespace defined in dimensions configuration.")
+            else:
+                print("Current dimensions namespace:", db_namespace)
+
         else:
-            print("Current dimensions namespace:", db_namespace)
+            if db_namespace and not update:
+                raise ValueError(
+                    f"Namespace is already defined ({db_namespace}), use --update option to replace it."
+                )
 
-    else:
-        if db_namespace and not update:
-            raise ValueError(
-                f"Namespace is already defined ({db_namespace}), use --update option to replace it."
-            )
+            def update_namespace(config: dict) -> dict:
+                """Update namespace attribute"""
+                config["namespace"] = namespace
+                return config
 
-        def update_namespace(config: dict) -> dict:
-            """Update namespace attribute"""
-            config["namespace"] = namespace
-            return config
-
-        with db.connect() as connection:
-            attributes = butler_attributes.ButlerAttributes(connection, db.schema)
-            attributes.update_dimensions_json(update_namespace)
+            with db.connect() as connection:
+                attributes = butler_attributes.ButlerAttributes(connection, db.schema)
+                attributes.update_dimensions_json(update_namespace)

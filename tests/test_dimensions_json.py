@@ -109,6 +109,7 @@ class DimensionsJsonTestCase(TestCaseMixin):
         """Test version upgrade from N to N+1."""
         butler_root = self.make_butler(start_version)
         db = database.Database.from_repo(butler_root)
+        self.enterContext(db)
 
         versions = db.manager_versions(_NAMESPACE)
         self.assertEqual(versions[_MANAGER], (_NAMESPACE, str(start_version), _revision_id(start_version)))
@@ -140,6 +141,7 @@ class DimensionsJsonTestCase(TestCaseMixin):
         """Test version downgrade from N to N-1."""
         butler_root = self.make_butler(start_version)
         db = database.Database.from_repo(butler_root)
+        self.enterContext(db)
 
         versions = db.manager_versions(_NAMESPACE)
         self.assertEqual(versions[_MANAGER], (_NAMESPACE, str(start_version), _revision_id(start_version)))
@@ -184,6 +186,7 @@ class DimensionsJsonTestCase(TestCaseMixin):
         """
         butler_root = self.make_butler(0)
         db = database.Database.from_repo(butler_root)
+        self.enterContext(db)
 
         self.assertIsNone(db.dimensions_namespace())
         versions = db.manager_versions(_NAMESPACE)
@@ -224,26 +227,24 @@ class DimensionsJsonTestCase(TestCaseMixin):
         """
         butler_root = self.make_butler(0)
         db = database.Database.from_repo(butler_root)
+        self.enterContext(db)
 
         self.assertIsNone(db.dimensions_namespace())
         versions = db.manager_versions(_NAMESPACE)
         self.assertEqual(versions[_MANAGER], (_NAMESPACE, "0", _revision_id(0)))
 
-        butler = Butler.from_config(butler_root, writeable=True)
-        self.enterContext(butler)
-        assert isinstance(butler, DirectButler), "Only DirectButler is supported"
-        butler.import_(filename=os.path.join(TESTDIR, "data", "records.yaml"), without_datastore=True)
+        with Butler.from_config(butler_root, writeable=True) as butler:
+            assert isinstance(butler, DirectButler), "Only DirectButler is supported"
+            butler.import_(filename=os.path.join(TESTDIR, "data", "records.yaml"), without_datastore=True)
 
-        # Check records for v0 attributes.
-        records = list(butler.registry.queryDimensionRecords("visit"))
-        for record in records:
-            self.assertEqual(record.visit_system, 0)
+            # Check records for v0 attributes.
+            records = list(butler.registry.queryDimensionRecords("visit"))
+            for record in records:
+                self.assertEqual(record.visit_system, 0)
 
-        records = list(butler.registry.queryDimensionRecords("visit_definition"))
-        for record in records:
-            self.assertEqual(record.visit_system, 0)
-
-        del butler
+            records = list(butler.registry.queryDimensionRecords("visit_definition"))
+            for record in records:
+                self.assertEqual(record.visit_system, 0)
 
         # Upgrade to v1. We could upgrade to v2 in one step but I want to check
         # different arguments at each step.
@@ -311,6 +312,7 @@ class DimensionsJsonTestCase(TestCaseMixin):
     def test_validate_dimensions_json(self) -> None:
         butler_root = self.make_butler(0)
         db = database.Database.from_repo(butler_root)
+        self.enterContext(db)
         universe = 5
         with db.connect() as connection:
             attribs = butler_attributes.ButlerAttributes(connection, schema=db.schema)

@@ -51,32 +51,31 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, names
         Dimensions namespace to use when "namespace" key is not present in
         ``config:dimensions.json``.
     """
-    db = database.Database.from_repo(repo)
+    with database.Database.from_repo(repo) as db:
+        if namespace is None and db.dimensions_namespace() is None:
+            raise ValueError(
+                "The `--namespace` option is required when namespace is missing from"
+                " stored dimensions configuration"
+            )
 
-    if namespace is None and db.dimensions_namespace() is None:
-        raise ValueError(
-            "The `--namespace` option is required when namespace is missing from"
-            " stored dimensions configuration"
-        )
-
-    cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
-    if butler:
-        # Print current versions defined in butler.
-        script_info = scripts.Scripts(cfg)
-        heads = script_info.head_revisions()
-        manager_versions = db.manager_versions(namespace)
-        if manager_versions:
-            for manager, (klass, version, rev_id) in sorted(manager_versions.items()):
-                head = " (head)" if rev_id in heads else ""
-                print(f"{manager}: {klass} {version} -> {rev_id}{head}")
+        cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
+        if butler:
+            # Print current versions defined in butler.
+            script_info = scripts.Scripts(cfg)
+            heads = script_info.head_revisions()
+            manager_versions = db.manager_versions(namespace)
+            if manager_versions:
+                for manager, (klass, version, rev_id) in sorted(manager_versions.items()):
+                    head = " (head)" if rev_id in heads else ""
+                    print(f"{manager}: {klass} {version} -> {rev_id}{head}")
+            else:
+                print("No manager versions defined in butler_attributes table.")
         else:
-            print("No manager versions defined in butler_attributes table.")
-    else:
-        # Revisions from alembic.
-        command.current(cfg, verbose=verbose)
+            # Revisions from alembic.
+            command.current(cfg, verbose=verbose)
 
-    # Complain if alembic_version table is there but does not match manager
-    # versions.
-    if db.alembic_revisions():
-        script_info = scripts.Scripts(cfg)
-        db.validate_revisions(namespace, script_info.base_revisions())
+        # Complain if alembic_version table is there but does not match manager
+        # versions.
+        if db.alembic_revisions():
+            script_info = scripts.Scripts(cfg)
+            db.validate_revisions(namespace, script_info.base_revisions())
