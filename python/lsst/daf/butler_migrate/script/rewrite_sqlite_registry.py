@@ -151,6 +151,10 @@ def _rewrite_sqlite_registry(source_butler: DirectButler) -> None:
         # Now need to move this registry to the original location
         # and move the existing registry to a backup.
 
+        assert isinstance(source_butler, DirectButler)
+        assert isinstance(source_butler._registry, SqlRegistry), "Expecting SqlRegistry instance"
+        assert isinstance(source_butler._registry._db, SqliteDatabase), "Expecting SqliteDatabase instance"
+
         # Relocate the source registry first
         assert source_butler._registry._db.filename is not None, "Expecting non-None filename from registry"
         source_registry_uri = ResourcePath(source_butler._registry._db.filename)
