@@ -39,5 +39,5 @@ def migrate_dump_schema(repo: str, table: list[str]) -> None:
     table : `list`
         List of the tables, if empty then schema for all tables is printed.
     """
-    db = database.Database.from_repo(repo)
-    db.dump_schema(table)
+    with database.Database.from_repo(repo) as db:
+        db.dump_schema(table)

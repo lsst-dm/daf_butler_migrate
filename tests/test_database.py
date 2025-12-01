@@ -92,6 +92,7 @@ def make_revision_tables(
             for query in queries:
                 conn.execute(sqlalchemy.text(query))
         yield db_url
+        engine.dispose()
 
 
 class DatabaseTestCase(unittest.TestCase):
@@ -99,8 +100,7 @@ class DatabaseTestCase(unittest.TestCase):
 
     def test_manager_versions(self) -> None:
         """Test for manager_versions() method"""
-        with make_revision_tables() as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables() as db_url, database.Database(db_url) as db:
             manager_versions = db.manager_versions()
             self.assertEqual(
                 manager_versions,
@@ -116,8 +116,7 @@ class DatabaseTestCase(unittest.TestCase):
 
     def test_alembic_revisions(self) -> None:
         """Test for alembic_revisions() method"""
-        with make_revision_tables() as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables() as db_url, database.Database(db_url) as db:
             alembic_revisions = db.alembic_revisions()
             self.assertCountEqual(
                 alembic_revisions,
@@ -129,40 +128,34 @@ class DatabaseTestCase(unittest.TestCase):
 
     def test_validate_revisions(self) -> None:
         """Test for validate_revisions() method"""
-        with make_revision_tables() as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables() as db_url, database.Database(db_url) as db:
             db.validate_revisions()
 
-        with make_revision_tables(make_alembic=False) as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables(make_alembic=False) as db_url, database.Database(db_url) as db:
             with self.assertRaisesRegex(
                 database.RevisionConsistencyError, "alembic_version table does not exist or is empty"
             ):
                 db.validate_revisions()
 
-        with make_revision_tables(fill_alembic=False) as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables(fill_alembic=False) as db_url, database.Database(db_url) as db:
             with self.assertRaisesRegex(
                 database.RevisionConsistencyError, "alembic_version table does not exist or is empty"
             ):
                 db.validate_revisions()
 
-        with make_revision_tables(make_butler=False) as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables(make_butler=False) as db_url, database.Database(db_url) as db:
             with self.assertRaisesRegex(
                 database.RevisionConsistencyError, "butler_attributes table does not exist"
             ):
                 db.validate_revisions()
 
-        with make_revision_tables(fill_butler=False) as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables(fill_butler=False) as db_url, database.Database(db_url) as db:
             with self.assertRaisesRegex(
                 database.RevisionConsistencyError, "butler_attributes table is empty"
             ):
                 db.validate_revisions()
 
-        with make_revision_tables(broken_alembic=True) as db_url:
-            db = database.Database(db_url)
+        with make_revision_tables(broken_alembic=True) as db_url, database.Database(db_url) as db:
             with self.assertRaisesRegex(
                 database.RevisionConsistencyError, "Butler and alembic revisions are inconsistent"
             ):

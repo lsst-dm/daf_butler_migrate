@@ -70,8 +70,20 @@ def update_day_obs(repo: str, instrument: str) -> None:
     class registered with the instrument record.
     """
     # Connect to the butler.
-    butler = Butler.from_config(repo, writeable=True)
+    with Butler.from_config(repo, writeable=True) as butler:
+        _update_day_obs(butler, instrument)
 
+
+def _update_day_obs(butler: Butler, instrument: str) -> None:
+    """Update day obs by taking Butler rather than repo string.
+
+    Parameters
+    ----------
+    butler : `lsst.daf.butler.Butler`
+        Butler repository to update.
+    instrument : `str`
+        Name of instrument to use to update records.
+    """
     # Need the instrument class, since that is used to calculate day_obs.
     # Do not depend directly on pipe_base but to load this class pipe_base
     # will have to be available.
