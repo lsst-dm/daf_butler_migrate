@@ -177,7 +177,6 @@ def _make_obscore_table(obscore_config: dict) -> None:
             config=obscore_config,
             datasets=managers.datasets.__class__,
             dimensions=managers.dimensions,
-            column_type_info=registry._managers.column_types,
         )
     # Note that we are using bind from migration context, and not from
     # Registry. This should work in general, but watch for any surprises.
