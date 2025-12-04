@@ -74,6 +74,8 @@ class MigAlembicConfig(Config):
         cfg.set_main_option("script_location", alembic_folder)
         cfg.set_section_option("alembic", "file_template", "%%(rev)s")
         cfg.set_section_option("alembic", "prepend_sys_path", ".")
+        # We use space as separateor in version_locations below.
+        cfg.set_section_option("alembic", "path_separator", "space")
         _LOG.debug(
             "alembic_folder: %r, single_tree: %r, one_shot_tree: %r",
             alembic_folder,

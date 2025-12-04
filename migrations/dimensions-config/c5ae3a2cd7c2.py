@@ -3,7 +3,6 @@
 Revision ID: c5ae3a2cd7c2
 Revises: bf6308af80aa
 Create Date: 2022-11-25 12:04:18.424257
-
 """
 
 import sqlalchemy as sa
@@ -76,7 +75,7 @@ def _migrate(old_version: int, new_version: int, column_size: int, old_column_si
                 column_type = sa.Text()
             else:
                 column_type = sa.String(column_size)
-            batch_op.alter_column(column, type_=column_type)  # type: ignore[attr-defined]
+            batch_op.alter_column(column, type_=column_type)
 
             assert mig_context.bind is not None, "Requires an existing bind"
             if mig_context.bind.dialect.name == "sqlite":
@@ -85,6 +84,6 @@ def _migrate(old_version: int, new_version: int, column_size: int, old_column_si
                 constraint = f'length("{column}")<={column_size} AND length("{column}")>=1'
                 if old_column_size <= 32:
                     # Constraint only exists for shorter strings.
-                    batch_op.drop_constraint(constraint_name)  # type: ignore[attr-defined]
+                    batch_op.drop_constraint(constraint_name)
                 if column_size <= 32:
-                    batch_op.create_check_constraint(constraint_name, sa.text(constraint))  # type: ignore
+                    batch_op.create_check_constraint(constraint_name, sa.text(constraint))

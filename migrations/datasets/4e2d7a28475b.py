@@ -3,7 +3,6 @@
 Revision ID: 4e2d7a28475b
 Revises: 2101fbf51ad3
 Create Date: 2023-03-31 22:25:32.651155
-
 """
 
 import datetime
@@ -149,10 +148,10 @@ def _migrate_default(
     with op.batch_alter_table("dataset", schema) as batch_op:
         if server_default is None:
             # If removing a default it has to be done first
-            batch_op.alter_column("ingest_date", server_default=None)  # type: ignore[attr-defined]
+            batch_op.alter_column("ingest_date", server_default=None)
     with op.batch_alter_table("dataset", schema) as batch_op:
         # Change the type of the column.
-        batch_op.alter_column(  # type: ignore[attr-defined]
+        batch_op.alter_column(
             "ingest_date", type_=column_type, server_default=server_default
         )
 
