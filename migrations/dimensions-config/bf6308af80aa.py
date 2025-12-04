@@ -3,7 +3,6 @@
 Revision ID: bf6308af80aa
 Revises: 380002bcbb26
 Create Date: 2022-05-16 12:11:17.906600
-
 """
 import logging
 
@@ -74,7 +73,7 @@ def _FKConstraint(
     schema: str | None = None,
     ondelete: str | None = None,
 ) -> sa.schema.ForeignKeyConstraint:
-    """Create foreign key constraint."""
+    # Create foreign key constraint.
     fk_name = "_".join(["fkey", src_table, tgt_table] + tgt_columns + src_columns)
     fk_name = shrinkDatabaseEntityName(fk_name, bind)
     tgt_columns = [f"{tgt_table}.{col}" for col in tgt_columns]
@@ -85,7 +84,8 @@ def _FKConstraint(
 
 def _migrate_visit_definition() -> None:
     """Make new visit_system_membership table, fill from existing data
-    in visit_definition."""
+    in visit_definition.
+    """
 
     mig_context = context.get_context()
     bind = mig_context.bind
@@ -153,15 +153,30 @@ def _migrate_visit_definition() -> None:
     with op.batch_alter_table("visit_definition", schema=schema) as batch_op:
         # visit_system is in PK. Postgres drops PK when the column is dropped,
         # but sqlite complains that column cannot be dropped if it's in PK.
-        # The workaround is to create PK with new columns, but Postgres also
-        # requires existing PK to be dropped first, and in sqlite we do not
-        # even have name for PK constraint, so it cannot be dropped
-        # explicitly.
+        # Dropping PK in SQLite cannot be done as we generate PKs without name.
+        # Simply trying to replace PK using different columns generates
+        # SAWarning. The workaround is to re-create PK with old columns and
+        # name it, then drop that named PK. Postgres also requires existing PK
+        # to be dropped first before re-creating it.
+
+        # Drop PK in Postgres.
         if bind.dialect.name == "postgresql":
-            batch_op.drop_constraint("visit_definition_pkey")  # type: ignore[attr-defined]
+            batch_op.drop_constraint("visit_definition_pkey")
+
+        # Re-create PK and give it a name.
+        batch_op.create_primary_key(
+            "visit_definition_pkey", ["instrument", "visit_system", "exposure"]
+        )
+
+        # Now drop named PK.
+        batch_op.drop_constraint("visit_definition_pkey")  # type: ignore[attr-defined]
+
+        # Create PK with different columns.
         batch_op.create_primary_key(  # type: ignore[attr-defined]
             "visit_definition_pkey", ["instrument", "exposure", "visit"]
         )
+
+        # Finally drop index and column.
         batch_op.drop_index("visit_definition_fkidx_instrument_visit_system")  # type: ignore[attr-defined]
         batch_op.drop_column("visit_system")  # type: ignore[attr-defined]
 
