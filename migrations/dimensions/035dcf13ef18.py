@@ -3,7 +3,6 @@
 Revision ID: 035dcf13ef18
 Revises: 1601d5973bf8
 Create Date: 2022-05-19 15:40:18.561744
-
 """
 import logging
 from typing import cast
@@ -26,9 +25,11 @@ MANAGER = "lsst.daf.butler.registry.dimensions.static.StaticDimensionRecordStora
 
 
 def upgrade() -> None:
-    """Summary of changes for this migration:
+    """Upgrade from version 6.0.1 to version 6.0.2.
 
-        - implied dimension columns (non-PK foreign keys) add NOT NULL
+    Summary of changes for this migration:
+
+        - implied dimension columns (non-PK foreign keys) add NOT NULL.
 
     Note that schema digests are not updated. Just before we updated code for
     6.0.2 versions we disabled validation of checksums. Older code that uses
@@ -82,7 +83,7 @@ def _do_migration(nullable: bool, manager_version: str) -> None:
                         _LOG.info("Add NULL to column %s.%s", element_name, other_element)
                     else:
                         _LOG.info("Add NOT NULL to column %s.%s", element_name, other_element)
-                    batch_op.alter_column(other_element, nullable=nullable)  # type: ignore[attr-defined]
+                    batch_op.alter_column(other_element, nullable=nullable)
 
     attributes.update_manager_version(MANAGER, manager_version)
 

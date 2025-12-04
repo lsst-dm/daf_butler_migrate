@@ -147,7 +147,7 @@ def _migrate_visit_definition() -> None:
         visit_definition.columns["visit"],
     ).distinct()
     sql = visit_membership.insert().from_select(["instrument", "visit_system", "visit"], selection)
-    op.execute(sql)  # type: ignore[arg-type]
+    op.execute(sql)
 
     # Drop visit_system from visit_definition.
     with op.batch_alter_table("visit_definition", schema=schema) as batch_op:
@@ -169,16 +169,16 @@ def _migrate_visit_definition() -> None:
         )
 
         # Now drop named PK.
-        batch_op.drop_constraint("visit_definition_pkey")  # type: ignore[attr-defined]
+        batch_op.drop_constraint("visit_definition_pkey")
 
         # Create PK with different columns.
-        batch_op.create_primary_key(  # type: ignore[attr-defined]
+        batch_op.create_primary_key(
             "visit_definition_pkey", ["instrument", "exposure", "visit"]
         )
 
         # Finally drop index and column.
-        batch_op.drop_index("visit_definition_fkidx_instrument_visit_system")  # type: ignore[attr-defined]
-        batch_op.drop_column("visit_system")  # type: ignore[attr-defined]
+        batch_op.drop_index("visit_definition_fkidx_instrument_visit_system")
+        batch_op.drop_column("visit_system")
 
 
 def _migrate_instrument() -> None:
@@ -217,10 +217,10 @@ def _migrate_visit() -> None:
 
     _LOG.info("migrating visit table")
     with op.batch_alter_table("visit", schema=schema) as batch_op:
-        batch_op.drop_index("visit_fkidx_instrument_visit_system")  # type: ignore[attr-defined]
-        batch_op.drop_column("visit_system")  # type: ignore[attr-defined]
-        batch_op.add_column(sa.Column("seq_num", sa.BigInteger))  # type: ignore[attr-defined]
-        batch_op.add_column(sa.Column("azimuth", sa.Float))  # type: ignore[attr-defined]
+        batch_op.drop_index("visit_fkidx_instrument_visit_system")
+        batch_op.drop_column("visit_system")
+        batch_op.add_column(sa.Column("seq_num", sa.BigInteger))
+        batch_op.add_column(sa.Column("azimuth", sa.Float))
 
     # Fill seq_num column with the lowest value of matching exposure.seq_num.
     #
@@ -274,10 +274,10 @@ def _migrate_exposure(has_simulated: bool) -> None:
 
     _LOG.info("migrating exposure table")
     with op.batch_alter_table("exposure", schema=schema) as batch_op:
-        batch_op.add_column(sa.Column("seq_start", sa.BigInteger))  # type: ignore[attr-defined]
-        batch_op.add_column(sa.Column("seq_end", sa.BigInteger))  # type: ignore[attr-defined]
-        batch_op.add_column(sa.Column("azimuth", sa.Float))  # type: ignore[attr-defined]
-        batch_op.add_column(sa.Column("has_simulated", sa.Boolean))  # type: ignore[attr-defined]
+        batch_op.add_column(sa.Column("seq_start", sa.BigInteger))
+        batch_op.add_column(sa.Column("seq_end", sa.BigInteger))
+        batch_op.add_column(sa.Column("azimuth", sa.Float))
+        batch_op.add_column(sa.Column("has_simulated", sa.Boolean))
 
     table = sa.schema.Table("exposure", metadata, autoload_with=bind, schema=schema)
     op.execute(

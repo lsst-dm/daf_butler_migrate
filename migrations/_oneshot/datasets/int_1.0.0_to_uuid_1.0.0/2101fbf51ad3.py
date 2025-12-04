@@ -3,7 +3,6 @@
 Revision ID: 2101fbf51ad3
 Revises: 635083325f20
 Create Date: 2021-05-04 16:31:05.926989
-
 """
 from __future__ import annotations
 
@@ -452,24 +451,24 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str | None) ->
         for index_dict in table_info.indices:
             index_name = index_dict["name"]
             _LOG.debug("Dropping index %s", index_dict)
-            batch_op.drop_index(index_name)  # type: ignore[attr-defined]
+            batch_op.drop_index(index_name)
 
         for unique_dict in table_info.unique_constraints:
             unique_name = unique_dict["name"]
             _LOG.debug("Dropping unique constraint %s", unique_name)
-            batch_op.drop_constraint(unique_name)  # type: ignore[attr-defined]
+            batch_op.drop_constraint(unique_name)
 
         for fk_dict in table_info.foreign_keys:
             fk_name = fk_dict["name"]
             _LOG.debug("Dropping foreign key %s", fk_name)
-            batch_op.drop_constraint(fk_name)  # type: ignore[attr-defined]
+            batch_op.drop_constraint(fk_name)
 
         if table_info.primary_key:
             _LOG.debug("Primary key: %s", table_info.primary_key)
             pk_name = table_info.primary_key["name"]
             if pk_name:
                 _LOG.debug("Dropping primary key %s", pk_name)
-                batch_op.drop_constraint(pk_name)  # type: ignore[attr-defined]
+                batch_op.drop_constraint(pk_name)
             else:
                 dialect = op.get_bind().dialect
                 if dialect.name == "sqlite":
@@ -483,13 +482,13 @@ def _drop_columns(table_name: str, table_info: TableInfo, schema: str | None) ->
                         idx = columns.index(id_col)
                         columns[idx] += "_uuid"
                         _LOG.debug("Creating primary key %s", columns)
-                        batch_op.create_primary_key(  # type: ignore[attr-defined]
+                        batch_op.create_primary_key(
                             f"{table_name}_pkey", columns
                         )
 
         # drop column
         _LOG.debug("Dropping column %s", id_col)
-        batch_op.drop_column(id_col)  # type: ignore[attr-defined]
+        batch_op.drop_column(id_col)
 
     # drop a sequence as well
     if table_name == "dataset":
@@ -509,7 +508,7 @@ def _rename_column(table_name: str, schema: str | None) -> None:
     _LOG.debug("Renaming uuid column in table %s to %s", table_name, id_col)
 
     with op.batch_alter_table(table_name, schema) as batch_op:
-        batch_op.alter_column(  # type: ignore[attr-defined]
+        batch_op.alter_column(
             f"{id_col}_uuid", new_column_name=id_col, nullable=False
         )
 
@@ -524,20 +523,20 @@ def _make_indices(table_name: str, table_info: TableInfo, schema: str | None) ->
                 pk_name = f"{table_name}_pkey"
             _LOG.debug("Adding primary key %s", pk_name)
             columns = table_info.primary_key["constrained_columns"]
-            batch_op.create_primary_key(pk_name, columns)  # type: ignore[attr-defined]
+            batch_op.create_primary_key(pk_name, columns)
 
         for unique_dict in table_info.unique_constraints:
             unique_name = unique_dict["name"]
             _LOG.debug("Adding unique constraint %s", unique_name)
             columns = unique_dict["column_names"]
-            batch_op.create_unique_constraint(unique_name, columns)  # type: ignore[attr-defined]
+            batch_op.create_unique_constraint(unique_name, columns)
 
         for index_dict in table_info.indices:
             index_name = index_dict["name"]
             _LOG.debug("Adding index %s", index_dict)
             columns = index_dict["column_names"]
             unique = index_dict["unique"]
-            batch_op.create_index(index_name, columns, unique=unique)  # type: ignore[attr-defined]
+            batch_op.create_index(index_name, columns, unique=unique)
 
         for fk_dict in table_info.foreign_keys:
             fk_name = fk_dict["name"]
@@ -551,7 +550,7 @@ def _make_indices(table_name: str, table_info: TableInfo, schema: str | None) ->
             ondelete = None
             if table_name.startswith(DYNAMIC_TABLES_PREFIX):
                 ondelete = "CASCADE"
-            batch_op.create_foreign_key(  # type: ignore[attr-defined]
+            batch_op.create_foreign_key(
                 fk_name, ref_table, local_cols, remote_cols, ondelete=ondelete, referent_schema=ref_schema
             )
 
