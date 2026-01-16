@@ -6,6 +6,14 @@
 lsst.daf.butler_migrate
 #######################
 
+Changes
+=======
+
+.. toctree::
+   :maxdepth: 1
+
+   CHANGES.rst
+
 .. _lsst.daf.butler_migrate-using:
 
 Using migration tools
