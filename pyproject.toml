@@ -153,3 +153,42 @@ exclude = [
     '^commands\.',  # Click docstrings, not numpydoc
     '\._',  # Do not check docstrings in private methods.
 ]
+
+
+[tool.towncrier]
+    package = "lsst.daf.butler_migrate"
+    package_dir = "python"
+    filename = "doc/lsst.daf.butler_migrate/CHANGES.rst"
+    directory = "doc/changes"
+    title_format = "lsst-daf-butler-migrate {version} ({project_date})"
+    issue_format = "`{issue} <https://rubinobs.atlassian.net/browse/{issue}>`_"
+
+    [[tool.towncrier.type]]
+        directory = "feature"
+        name = "New Features"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "api"
+        name = "API Changes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "bugfix"
+        name = "Bug Fixes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "perf"
+        name = "Performance Enhancement"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "misc"
+        name = "Other Changes and Additions"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "removal"
+        name = "An API Removal or Deprecation"
+        showcontent = true
