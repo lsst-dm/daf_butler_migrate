@@ -93,3 +93,11 @@ daf_butler 6 to 7
 Migration script: `352c30854bb0.py  <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/352c30854bb0.py>`_
 
 Adds ``can_see_sky`` column to the ``exposure`` table.
+
+
+daf_butler 7 to 8
+=================
+
+Migration script: `aa7a2f893cba.py  <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/aa7a2f893cba.py>`_
+
+Adds tables for three new solar-system dimensions: ``ssp_hypothesis_table``, ``ssp_hypothesis_bundle``, ``ssp_balanced_index``.
