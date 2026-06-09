@@ -1,3 +1,12 @@
+lsst-daf-butler-migrate v30.0.8 (2026-06-09)
+============================================
+
+New Features
+------------
+
+- Added migration script to extend dimensions configuration with three new solar-system dimensions from universe v8. (`DM-54838 <https://rubinobs.atlassian.net/browse/DM-54838>`_)
+
+
 lsst-daf-butler-migrate v30.0.0 (2026-01-16)
 ============================================
 
