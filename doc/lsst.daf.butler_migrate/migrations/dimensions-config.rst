@@ -101,3 +101,13 @@ daf_butler 7 to 8
 Migration script: `aa7a2f893cba.py  <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/aa7a2f893cba.py>`_
 
 Adds tables for three new solar-system dimensions: ``ssp_hypothesis_table``, ``ssp_hypothesis_bundle``, ``ssp_balanced_index``.
+
+
+Bug fix for daf_butler 5 to 6 migration
+=======================================
+
+Migration script: `22cde71e7a4b.py  <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config/22cde71e7a4b.py>`_
+
+Adds a foreign key constraint and index to the ``day_obs`` column of the ``visit`` table.
+These should have been included in migration ``1fae088c80b6``, but were accidentally omitted.
+Repositories initially created at universe 6 or later already have the constraint and index -- this migration does nothing if they are already present.
