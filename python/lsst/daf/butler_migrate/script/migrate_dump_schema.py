@@ -28,7 +28,7 @@ from .. import database
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_dump_schema(repo: str, table: list[str]) -> None:
+def migrate_dump_schema(repo: str, table: list[str], json: bool) -> None:
     """Dump the schema of the registry database.
 
     Parameters
@@ -38,6 +38,8 @@ def migrate_dump_schema(repo: str, table: list[str]) -> None:
         "butler.yaml" file.
     table : `list`
         List of the tables, if empty then schema for all tables is printed.
+    json : `bool`
+        If `True` dump schema in JSON format.
     """
     with database.Database.from_repo(repo) as db:
-        db.dump_schema(table)
+        db.dump_schema(table, format="json" if json else "text")
