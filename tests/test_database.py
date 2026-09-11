@@ -126,41 +126,6 @@ class DatabaseTestCase(unittest.TestCase):
                 ],
             )
 
-    def test_validate_revisions(self) -> None:
-        """Test for validate_revisions() method"""
-        with make_revision_tables() as db_url, database.Database(db_url) as db:
-            db.validate_revisions()
-
-        with make_revision_tables(make_alembic=False) as db_url, database.Database(db_url) as db:
-            with self.assertRaisesRegex(
-                database.RevisionConsistencyError, "alembic_version table does not exist or is empty"
-            ):
-                db.validate_revisions()
-
-        with make_revision_tables(fill_alembic=False) as db_url, database.Database(db_url) as db:
-            with self.assertRaisesRegex(
-                database.RevisionConsistencyError, "alembic_version table does not exist or is empty"
-            ):
-                db.validate_revisions()
-
-        with make_revision_tables(make_butler=False) as db_url, database.Database(db_url) as db:
-            with self.assertRaisesRegex(
-                database.RevisionConsistencyError, "butler_attributes table does not exist"
-            ):
-                db.validate_revisions()
-
-        with make_revision_tables(fill_butler=False) as db_url, database.Database(db_url) as db:
-            with self.assertRaisesRegex(
-                database.RevisionConsistencyError, "butler_attributes table is empty"
-            ):
-                db.validate_revisions()
-
-        with make_revision_tables(broken_alembic=True) as db_url, database.Database(db_url) as db:
-            with self.assertRaisesRegex(
-                database.RevisionConsistencyError, "Butler and alembic revisions are inconsistent"
-            ):
-                db.validate_revisions()
-
 
 if __name__ == "__main__":
     unittest.main()

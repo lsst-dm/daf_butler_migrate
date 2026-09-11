@@ -27,7 +27,7 @@ import logging
 
 from alembic import command
 
-from .. import config, database, scripts
+from .. import config, database
 
 _LOG = logging.getLogger(__name__)
 
@@ -74,9 +74,5 @@ def migrate_downgrade(
         cfg = config.MigAlembicConfig.from_mig_path(
             mig_path, repository=repo, db=db, one_shot_tree=one_shot_arg
         )
-
-        # check that alembic versions are consistent with butler
-        script_info = scripts.Scripts(cfg)
-        db.validate_revisions(namespace, script_info.base_revisions())
 
         command.downgrade(cfg, revision, sql=sql)

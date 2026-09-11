@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager
 from typing import Any, Literal, Self, cast
 
@@ -235,65 +235,6 @@ class Database(AbstractContextManager):
                 connection=connection, opts={"version_table_schema": self._schema}
             )
             return list(ctx.get_current_heads())
-
-    def validate_revisions(
-        self, namespace: str | None = None, base_revisions: Iterable[str] | None = None
-    ) -> None:
-        """Verify consistency of alembic revisions and butler versions.
-
-        Revisions in alembic table must match either a version of a manager in
-        butler_attributes or base revision (for manager that did not make yet
-        into butler_attributes).
-
-        Parameters
-        ----------
-        namespace : `str`, optional
-            Dimensions namespace to use when "namespace" key is not present in
-            ``config:dimensions.json``.
-        base_revisions : `iterable` [`str`], optional
-            Optional base revisions of the migration trees.
-
-        Raises
-        ------
-        RevisionConsistencyError
-            Raised if contents of the two tables is not consistent. Exception
-            message contains details of differences.
-        """
-        # TODO: possible optimization to reuse a connection to database
-        try:
-            manager_versions = self.manager_versions(namespace)
-        except sqlalchemy.exc.OperationalError as e:
-            raise RevisionConsistencyError("butler_attributes table does not exist") from e
-        alembic_revisions = self.alembic_revisions()
-
-        if manager_versions and not alembic_revisions:
-            raise RevisionConsistencyError("alembic_version table does not exist or is empty")
-        if alembic_revisions and not manager_versions:
-            raise RevisionConsistencyError("butler_attributes table is empty")
-
-        alembic_revs = set(alembic_revisions)
-        manager_revs: dict[str, tuple[str, str, str]] = {}
-        for manager, (klass, version, rev_id) in sorted(manager_versions.items()):
-            manager_revs[rev_id] = (manager, klass, version)
-        manager_revs_set = set(manager_revs.keys())
-
-        alembic_only = alembic_revs - manager_revs_set
-        if base_revisions:
-            alembic_only = alembic_only - set(base_revisions)
-        manager_only = manager_revs_set - alembic_revs
-
-        if alembic_only or manager_only:
-            msg = "Butler and alembic revisions are inconsistent --"
-            sep = ""
-            if alembic_only:
-                alembic_only_str = ",".join(alembic_only)
-                msg += f" revisions in alembic only: {alembic_only_str}"
-                sep = ";"
-            if manager_only:
-                msg += sep + " revisions in butler only:"
-                for rev in manager_only:
-                    msg += f" {rev}={manager_revs[rev]}"
-            raise RevisionConsistencyError(msg)
 
     def dump_schema(self, tables: list[str] | None) -> None:
         """Dump the schema of the registry database.

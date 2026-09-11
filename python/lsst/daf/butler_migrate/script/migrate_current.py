@@ -73,9 +73,3 @@ def migrate_current(repo: str, mig_path: str, verbose: bool, butler: bool, names
         else:
             # Revisions from alembic.
             command.current(cfg, verbose=verbose)
-
-        # Complain if alembic_version table is there but does not match manager
-        # versions.
-        if db.alembic_revisions():
-            script_info = scripts.Scripts(cfg)
-            db.validate_revisions(namespace, script_info.base_revisions())
