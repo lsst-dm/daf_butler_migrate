@@ -105,7 +105,7 @@ def _migrate_visit_definition() -> None:
     if bind.dialect.name == "sqlite":
         constraints.append(
             sa.schema.CheckConstraint(
-                "length(instrument)<=16 AND length(instrument)>=1",
+                'length("instrument")<=16 AND length("instrument")>=1',
                 name=shrinkDatabaseEntityName("_".join([table, "len", "instrument"]), bind),
             )
         )
