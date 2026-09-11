@@ -3,7 +3,6 @@
 Revision ID: 1fae088c80b6
 Revises: 2a8a32e1bec3
 Create Date: 2024-03-12 14:35:38.888572
-
 """
 
 from __future__ import annotations
@@ -40,8 +39,8 @@ def upgrade() -> None:
       the ``exposure`` table and timespan offsets from Butler ``Instrument``
       classes.
     - Rename ``group_name`` in the exposure table to ``group``.
-    - Update the ``exposure`` table so ``group`` and ``day_obs`` are foreign
-      keys to the new tables.
+    - Update the ``exposure`` and ``visit`` tables so ``group`` and ``day_obs``
+      are foreign keys to the new tables.
     - Remove ``group_id`` from ``exposure`` table.
     - Update ``config:dimensions.json`` to universe 6.
     """
@@ -166,7 +165,6 @@ def _migrate_groups(ctx: MigrationContext) -> None:
         schema=ctx.schema,
     )
 
-
 def _migrate_day_obs(ctx: MigrationContext) -> None:
     # Before doing anything else, generate the rows for the new day_obs table
     # from the data in the exposure table.  This is prone to failure due to the
@@ -207,26 +205,26 @@ def _migrate_day_obs(ctx: MigrationContext) -> None:
         schema=ctx.schema,
     )
 
-    # Update exposure table to reference day_obs table
-    _LOG.info("Updating exposure table to reference day_obs table")
-    with op.batch_alter_table("exposure", schema=ctx.schema) as batch_op:
-        batch_op.alter_column("day_obs", nullable=False)
-        batch_op.create_foreign_key(
-            constraint_name="fkey_exposure_day_obs_instrument_id_instrument_day_obs",
-            referent_table="day_obs",
-            local_cols=["instrument", "day_obs"],
-            remote_cols=["instrument", "id"],
-            referent_schema=ctx.schema,
-        )
+    # Update exposure and visit tables to reference day_obs table.
+    for table_name in ("exposure", "visit"):
+        _LOG.info("Updating %s table to reference day_obs table", table_name)
+        with op.batch_alter_table(table_name, schema=ctx.schema) as batch_op:
+            batch_op.alter_column("day_obs", nullable=False)
+            batch_op.create_foreign_key(
+                constraint_name=f"fkey_{table_name}_day_obs_instrument_id_instrument_day_obs",
+                referent_table="day_obs",
+                local_cols=["instrument", "day_obs"],
+                remote_cols=["instrument", "id"],
+                referent_schema=ctx.schema,
+            )
 
-    # Create index on exposure for day_obs fkey
-    op.create_index(
-        "exposure_fkidx_instrument_day_obs",
-        "exposure",
-        ["instrument", "day_obs"],
-        schema=ctx.schema,
+        # Create index on exposure for day_obs fkey.
+        op.create_index(
+            f"{table_name}_fkidx_instrument_day_obs",
+            table_name,
+            ["instrument", "day_obs"],
+            schema=ctx.schema,
     )
-
 
 def _migrate_dimensions_json(ctx: MigrationContext) -> None:
     _LOG.info("Updating dimensions.json in ButlerAttributes")
