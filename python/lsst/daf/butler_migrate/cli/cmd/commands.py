@@ -182,6 +182,7 @@ def set_namespace(**kwargs: Any) -> None:
 @migrate.command(short_help="Dump schema of the database tables.", cls=ButlerCommand)
 @repo_argument(required=True)
 @tables_argument(required=False)
+@click.option("--json", help="Produce JSON output.", is_flag=True, default=False)
 def dump_schema(**kwargs: Any) -> None:
     """Dump database schema in human-readable format."""
     script.migrate_dump_schema(**kwargs)

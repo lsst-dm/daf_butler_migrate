@@ -23,9 +23,10 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager
-from typing import Any, Literal, Self, cast
+from typing import Any, Literal, Self, TextIO, cast
 
 import sqlalchemy
 from alembic.runtime.migration import MigrationContext
@@ -295,7 +296,14 @@ class Database(AbstractContextManager):
                     msg += f" {rev}={manager_revs[rev]}"
             raise RevisionConsistencyError(msg)
 
-    def dump_schema(self, tables: list[str] | None) -> None:
+    def dump_schema(
+        self,
+        tables: list[str] | None = None,
+        *,
+        file: TextIO | None = None,
+        format: Literal["text", "json"] = "text",
+        make_pk_name: bool = False,
+    ) -> None:
         """Dump the schema of the registry database.
 
         Parameters
@@ -303,53 +311,131 @@ class Database(AbstractContextManager):
         tables : `list`, optional
             List of the tables, if missing or empty then schema for all tables
             is printed.
+        file : `TextIO`, optional
+            File to dump schema to, default is stdout.
+        format : `str`, optional
+            Output format, one of "text" or "json", default is "text".
+        make_pk_name : `bool`, optional
+            If `True` (default ids `False`) then generate PK name when it is
+            NULL. Useful with SQLite backend when initial PK has no name, but
+            migrated schema assigns it a name.
         """
+        use_json = format == "json"
+        json_tables = {}
+
         inspector = sqlalchemy.inspect(self.engine)
         table_names = sorted(inspector.get_table_names(schema=self._schema))
         for table in table_names:
             if tables and table not in tables:
                 continue
 
-            print(f"table={table}")
+            table_dict: dict[str, Any] = {"columns": []}
+            if use_json:
+                json_tables[table] = table_dict
+            else:
+                print(f"table={table}", file=file)
 
             column_list = inspector.get_columns(table, schema=self._schema)
             column_list.sort(key=lambda c: c["name"])
             for col in column_list:
-                print(
-                    f"  column={col['name']} type={col['type']} nullable={col['nullable']}"
-                    f" default={col['default']} [table={table}]"
-                )
+                if use_json:
+                    table_dict["columns"].append(
+                        {
+                            "name": col["name"],
+                            "type": str(col["type"]),
+                            "nullable": col["nullable"],
+                            "default": col["default"],
+                        }
+                    )
+                else:
+                    print(
+                        f"  column={col['name']} type={col['type']} nullable={col['nullable']}"
+                        f" default={col['default']} [table={table}]",
+                        file=file,
+                    )
 
             pk = inspector.get_pk_constraint(table, schema=self._schema)
             if pk:
-                columns = ",".join(pk["constrained_columns"])
-                print(f"  PK name={pk['name']} columns=({columns}) [table={table}]")
+                pk_name = pk["name"]
+                if pk_name is None and make_pk_name:
+                    pk_name = f"{table}_pkey"
+                if use_json:
+                    table_dict["primary_key"] = {
+                        "name": pk_name,
+                        "columns": pk["constrained_columns"],
+                    }
+                else:
+                    columns = ",".join(pk["constrained_columns"])
+                    print(f"  PK name={pk_name} columns=({columns}) [table={table}]", file=file)
 
             uniques = inspector.get_unique_constraints(table, schema=self._schema)
             uniques.sort(key=lambda uq: cast(str, uq["name"]))
             for uq in uniques:
-                columns = ",".join(uq["column_names"])
-                print(f"  UNIQUE name={uq['name']} columns=({columns}) [table={table}]")
+                if use_json:
+                    table_dict.setdefault("unique_constraints", []).append(
+                        {
+                            "name": uq["name"],
+                            "columns": uq["column_names"],
+                        }
+                    )
+                else:
+                    columns = ",".join(uq["column_names"])
+                    print(f"  UNIQUE name={uq['name']} columns=({columns}) [table={table}]", file=file)
 
             fks = inspector.get_foreign_keys(table, schema=self._schema)
             fks.sort(key=lambda fk: cast(str, fk["name"]))
             for fk in fks:
-                columns = ",".join(fk["constrained_columns"])
-                ref_columns = ",".join(fk["referred_columns"])
-                print(
-                    f"  FK name={fk['name']} ({columns}) -> {fk['referred_table']}({ref_columns})"
-                    f" [table={table}]"
-                )
+                if use_json:
+                    table_dict.setdefault("foreign_keys", []).append(
+                        {
+                            "name": fk["name"],
+                            "columns": fk["constrained_columns"],
+                            "referred_table": fk["referred_table"],
+                            "referred_columns": fk["referred_columns"],
+                        }
+                    )
+                else:
+                    columns = ",".join(fk["constrained_columns"])
+                    ref_columns = ",".join(fk["referred_columns"])
+                    print(
+                        f"  FK name={fk['name']} ({columns}) -> {fk['referred_table']}({ref_columns})"
+                        f" [table={table}]",
+                        file=file,
+                    )
 
             checks = inspector.get_check_constraints(table, schema=self._schema)
             checks.sort(key=lambda chk: cast(str, chk["name"]))
             for check in checks:
-                print(f"  CHECK name={check['name']} sqltext={check['sqltext']} [table={table}]")
+                if use_json:
+                    table_dict.setdefault("check_constraints", []).append(
+                        {
+                            "name": check["name"],
+                            "sqltext": check["sqltext"],
+                        }
+                    )
+                else:
+                    print(
+                        f"  CHECK name={check['name']} sqltext={check['sqltext']} [table={table}]", file=file
+                    )
 
             indices = inspector.get_indexes(table, schema=self._schema)
             indices.sort(key=lambda idx: cast(str, idx["name"]))
             for idx in indices:
-                columns = ",".join(cast(list[str], idx["column_names"]))
-                print(
-                    f"  INDEX name={idx['name']} columns=({columns}) unique={idx['unique']} [table={table}]"
-                )
+                if use_json:
+                    table_dict.setdefault("indices", []).append(
+                        {
+                            "name": idx["name"],
+                            "columns": idx["column_names"],
+                            "unique": idx["unique"],
+                        }
+                    )
+                else:
+                    columns = ",".join(cast(list[str], idx["column_names"]))
+                    print(
+                        f"  INDEX name={idx['name']} columns=({columns}) unique={idx['unique']}"
+                        " [table={table}]",
+                        file=file,
+                    )
+
+        if use_json:
+            json.dump(json_tables, file or sys.stdout, indent=2)

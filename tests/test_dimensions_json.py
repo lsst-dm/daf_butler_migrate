@@ -20,8 +20,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
+import difflib
+import functools
 import gc
+import io
 import os
+import sys
 import tempfile
 import unittest
 from typing import TYPE_CHECKING, Any
@@ -33,7 +37,10 @@ from lsst.daf.butler import Butler, Config
 from lsst.daf.butler.direct_butler import DirectButler
 from lsst.daf.butler.tests.utils import makeTestTempDir, removeTestTempDir
 from lsst.daf.butler_migrate import butler_attributes, database, migrate, script
-from lsst.daf.butler_migrate._dimensions_json_utils import historical_dimensions_resource
+from lsst.daf.butler_migrate._dimensions_json_utils import (
+    historical_dimensions_resource,
+    latest_universe_version,
+)
 from lsst.daf.butler_migrate.revision import rev_id
 
 try:
@@ -59,6 +66,12 @@ _NAMESPACE = "daf_butler"
 _MANAGER = "dimensions-config"
 
 
+@functools.cache
+def _latest_universe_version() -> int:
+    """Return latest version of the default daf_butler universe."""
+    return latest_universe_version()[1]
+
+
 def _revision_id(version: int, namespace: str = "daf_butler") -> str:
     """Return alembic revision name."""
     return rev_id(_MANAGER, namespace, str(version))
@@ -74,6 +87,11 @@ def _make_universe(version: int) -> Config:
 
 class DimensionsJsonTestCase(TestCaseMixin):
     """Tests for migrating of dimensions.json stored configuration."""
+
+    make_pk_name = False
+    """Passed to Database.dump_schema method, should be set to True for SQLite
+    backend.
+    """
 
     def setUp(self) -> None:
         self.root = makeTestTempDir(TESTDIR)
@@ -137,6 +155,30 @@ class DimensionsJsonTestCase(TestCaseMixin):
             versions[_MANAGER], (_NAMESPACE, str(start_version + 1), _revision_id(start_version + 1))
         )
 
+        # Compare migrated schemas to the freshly created one.
+        butler_root2 = self.make_butler(start_version + 1)
+        db2 = database.Database.from_repo(butler_root2)
+
+        migrated = io.StringIO()
+        db.dump_schema(file=migrated, make_pk_name=self.make_pk_name)
+        expected = io.StringIO()
+        db2.dump_schema(file=expected, make_pk_name=self.make_pk_name)
+
+        diff = list(
+            difflib.unified_diff(
+                expected.getvalue().splitlines(), migrated.getvalue().splitlines(), lineterm=""
+            )
+        )
+        if diff:
+            print(
+                "Upgraded schema differs from a fresh schema:\n",
+                f"Initial universe version={start_version}, target version={start_version + 1}",
+                file=sys.stderr,
+            )
+            for line in diff:
+                print(line, file=sys.stderr)
+            raise AssertionError("See diff output above")
+
     def _downgrade_one(self, start_version: int) -> None:
         """Test version downgrade from N to N-1."""
         butler_root = self.make_butler(start_version)
@@ -160,12 +202,36 @@ class DimensionsJsonTestCase(TestCaseMixin):
             versions[_MANAGER], (_NAMESPACE, str(start_version - 1), _revision_id(start_version - 1))
         )
 
+        # Compare migrated schemas to the freshly created one.
+        butler_root2 = self.make_butler(start_version)
+        db2 = database.Database.from_repo(butler_root2)
+
+        migrated = io.StringIO()
+        db.dump_schema(file=migrated, make_pk_name=self.make_pk_name)
+        expected = io.StringIO()
+        db2.dump_schema(file=expected, make_pk_name=self.make_pk_name)
+
+        diff = list(
+            difflib.unified_diff(
+                expected.getvalue().splitlines(), migrated.getvalue().splitlines(), lineterm=""
+            )
+        )
+        if diff:
+            print(
+                "Downgraded schema differs from a fresh schema:\n",
+                f"Initial universe version={start_version + 1}, target version={start_version}",
+                file=sys.stderr,
+            )
+            for line in diff:
+                print(line, file=sys.stderr)
+            raise AssertionError("See diff output above")
+
     def test_upgrade_empty(self) -> None:
         """Simple test for incremental upgrades for all known versions. This
         only tests schema changes with empty registry. More specific test can
         load data to verify that data migration also works OK.
         """
-        for start_version in range(6):
+        for start_version in range(_latest_universe_version()):
             with self.subTest(version=start_version):
                 self._upgrade_one(start_version)
 
@@ -173,7 +239,7 @@ class DimensionsJsonTestCase(TestCaseMixin):
         """Simple test for downgrades for all known versions. This only tests
         schema changes with empty registry.
         """
-        for start_version in range(6):
+        for start_version in range(_latest_universe_version()):
             with self.subTest(version=start_version):
                 with contextlib.suppress(NotImplementedError):
                     self._downgrade_one(start_version + 1)
@@ -349,6 +415,8 @@ class DimensionsJsonTestCase(TestCaseMixin):
 
 class SQLiteDimensionsJsonTestCase(DimensionsJsonTestCase, unittest.TestCase):
     """Test using SQLite backend."""
+
+    make_pk_name = True
 
     def _butler_config(self) -> Config | None:
         return None
