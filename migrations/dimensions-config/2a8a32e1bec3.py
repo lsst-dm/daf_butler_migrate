@@ -3,7 +3,6 @@
 Revision ID: 2a8a32e1bec3
 Revises: 9888256c6a18
 Create Date: 2024-02-20 14:49:26.435042
-
 """
 
 import logging
@@ -96,9 +95,9 @@ def _migrate(old_version: int, new_version: int, size: int) -> None:
         _LOG.info("Alter %s.%s column type to %s", table, column, new_type)
         with op.batch_alter_table(table, schema=schema) as batch_op:
             batch_op.alter_column(column, type_=new_type)
-            if op.get_bind().dialect.name == "sqlite" and table == "instrument":
+            if op.get_bind().dialect.name == "sqlite":
                 # SQLite uses special check constraint.
-                constraint_name = "instrument_len_name"
+                constraint_name = f"{table}_len_{column}"
                 batch_op.drop_constraint(constraint_name)
                 constraint = f'length("{column}")<={size} AND length("{column}")>=1'
                 batch_op.create_check_constraint(constraint_name, sqlalchemy.text(constraint))
