@@ -31,7 +31,6 @@ from ..opt import (
     class_argument,
     dry_run_option,
     instrument_argument,
-    manager_argument,
     mig_path_exist_option,
     mig_path_option,
     namespace_argument,
@@ -101,10 +100,11 @@ def show_trees(*args: Any, **kwargs: Any) -> None:
 @namespace_option
 @dry_run_option
 @repo_argument(required=True)
-@manager_argument()
+@tree_name_argument(required=False)
 def stamp(*args: Any, **kwargs: Any) -> None:
     """Stamp Alembic revision table (alembic_version) with current manager
-    versions from butler_attributes.
+    versions from butler_attributes. If TREE_NAME argument is not provided
+    then all revision trees are stamped.
     """
     script.migrate_stamp(*args, **kwargs)
 

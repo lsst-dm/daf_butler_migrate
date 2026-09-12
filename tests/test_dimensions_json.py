@@ -119,7 +119,7 @@ class DimensionsJsonTestCase(TestCaseMixin):
             purge=False,
             dry_run=False,
             namespace=_NAMESPACE if version == 0 else None,
-            manager=None,
+            tree_name=None,
         )
         return butler_root
 
