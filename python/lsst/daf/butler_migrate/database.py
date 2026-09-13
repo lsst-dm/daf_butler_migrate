@@ -183,6 +183,7 @@ class Database(AbstractContextManager):
         # parse table contents into two separate maps
         managers: dict[str, str] = {}
         versions: dict[str, str] = {}
+        revisions: dict[str, tuple[str, str, str]] = {}
         sql = sqlalchemy.sql.select(table.columns.name, table.columns.value)
         with self.engine.connect() as connection:
             result = connection.execute(sql)
@@ -191,6 +192,15 @@ class Database(AbstractContextManager):
                     managers[name.rpartition(".")[-1]] = value
                 elif name.startswith("version:"):
                     versions[name.partition(":")[-1]] = value
+                elif name.startswith("migrate-patch-config:"):
+                    # Manager names will conflict with regular managers, do not
+                    # update managers/versions, fill revisions directly.
+                    tree_name = name.partition(":")[-1]
+                    config_json = json.loads(value)
+                    manager = config_json["manager"]
+                    version = config_json["version"]
+                    rev_id_str = revision.rev_id(tree_name, manager, str(version))
+                    revisions[tree_name] = (manager, str(version), rev_id_str)
                 elif name == self.dimensions_json_key:
                     dimensions_json = json.loads(value)
                     namespace = dimensions_json.get("namespace", namespace)
@@ -210,7 +220,6 @@ class Database(AbstractContextManager):
                     versions[namespace] = str(obscore_json["version"])
 
         # combine them into one structure
-        revisions: dict[str, tuple[str, str, str]] = {}
         for manager, klass in managers.items():
             version = versions.get(klass)
             if version:
