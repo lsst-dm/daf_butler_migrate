@@ -28,7 +28,7 @@ from .. import database
 _LOG = logging.getLogger(__name__)
 
 
-def migrate_dump_schema(repo: str, table: list[str], json: bool) -> None:
+def migrate_dump_schema(repo: str, table: list[str], json: bool = False) -> None:
     """Dump the schema of the registry database.
 
     Parameters

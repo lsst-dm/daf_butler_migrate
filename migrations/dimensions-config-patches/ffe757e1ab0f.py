@@ -69,7 +69,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Undo changes done in `upgrade`."""
-    # This is the very first migration in the tree, currently the is no way
+    # This is the very first migration in the tree, currently there is no way
     # to restore the state of butler_attributes and we do not really want to
     # undo this migration in any case.
     raise NotImplementedError()

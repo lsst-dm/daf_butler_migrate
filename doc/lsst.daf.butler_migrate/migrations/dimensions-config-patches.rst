@@ -24,7 +24,7 @@ daf_butler v6-patch1
 Migration script: `ffe757e1ab0f.py <https://github.com/lsst-dm/daf_butler_migrate/blob/main/migrations/dimensions-config-patches/ffe757e1ab0f.py>`_
 
 This migration adds a foreign key to a ``visit`` table that refers ``day_obs`` table and a corresponding index.
-This is needed for repositories that were migrated earlier from version 5 to 6 as migration script did not add add that FK.
+This is needed for repositories that were migrated earlier from version 5 to 6 as migration script did not add that FK.
 Repositories created from scratch with dimensions version 6 or later have that FK, this script does not change them.
 
 Depends on: ``1fae088c80b6`` (migration that upgrades ``dimensions-config`` from version 5 to 6).
