@@ -24,7 +24,6 @@ from __future__ import annotations
 __all__ = [
     "class_argument",
     "instrument_argument",
-    "manager_argument",
     "namespace_argument",
     "revision_argument",
     "tables_argument",
@@ -60,17 +59,6 @@ revision_argument = MWArgumentDecorator(
         "REVISION is a target alembic revision, in offline mode it can also "
         "specify initial revision using INITIAL:TARGET format."
     ),
-)
-
-manager_argument = MWArgumentDecorator(
-    "manager",
-    help=(
-        "MANAGER is a name of the manager for which to stamp the revision, "
-        "if missing then all managers already defined in butler_attributes "
-        "are stamped. To stamp initial revision for a manager not in "
-        "butler_attributes, provide its name explicitly."
-    ),
-    required=False,
 )
 
 namespace_argument = MWArgumentDecorator(

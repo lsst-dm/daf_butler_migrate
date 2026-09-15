@@ -120,7 +120,14 @@ class ButlerAttributes:
         # result may be None in offline mode, assume that we updated something
         return 1 if result is None else result.rowcount
 
-    def update_manager_version(self, manager: str, version: str) -> None:
+    def update_manager_version(
+        self,
+        manager: str,
+        version: str,
+        *,
+        patch: bool = False,
+        tree_name: str | None = None,
+    ) -> None:
         """Update version for the specified manager.
 
         Parameters
@@ -129,16 +136,38 @@ class ButlerAttributes:
             Manager name.
         version : `str`
             New version string.
+        patch : `bool`, optional
+            If `True` (default is `False`) assume that migration is in a patch
+            tree.
+        tree_name : `str, optional
+            Name of the migration tree, used only when ``patch`` is `True` and
+            must be specified in that case.
 
         Raises
         ------
         LookupError
             Raised if manager is not found in the table.
         """
-        manager_key = f"version:{manager}"
-        count = self.update(manager_key, version)
-        if count != 1:
-            raise LookupError(f"Manager key {manager_key} is not found in butler_attributes table.")
+        if patch:
+            if tree_name is None:
+                raise TypeError("tree_name must be specified for patch migrations")
+            key = f"migrate-patch-config:{tree_name}"
+            value = json.dumps(
+                {
+                    "manager": manager,
+                    "version": version,
+                }
+            )
+            # The key may be missing in case of the very first migration.
+            if self.get(key) is None:
+                self.insert(key, value)
+            else:
+                self.update(key, value)
+        else:
+            manager_key = f"version:{manager}"
+            count = self.update(manager_key, version)
+            if count != 1:
+                raise LookupError(f"Manager key {manager_key} is not found in butler_attributes table.")
 
     def delete(self, name: str) -> int:
         """Delete parameter from butler_attributes table.

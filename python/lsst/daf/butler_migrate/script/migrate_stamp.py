@@ -33,7 +33,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def migrate_stamp(
-    repo: str, mig_path: str, purge: bool, dry_run: bool, namespace: str | None, manager: str | None
+    repo: str, mig_path: str, purge: bool, dry_run: bool, namespace: str | None, tree_name: str | None
 ) -> None:
     """Stamp alembic revision table with current registry versions.
 
@@ -51,8 +51,9 @@ def migrate_stamp(
     namespace : `str`, optional
         Dimensions namespace to use when "namespace" key is not present in
         ``config:dimensions.json``.
-    manager : `str`, Optional
-        Name of the manager to stamp, if `None` then all managers are stamped.
+    tree_name : `str`, Optional
+        Name of the manager type (tree) to stamp, if `None` then all managers
+        types are stamped.
     """
     with database.Database.from_repo(repo) as db:
         if namespace is None and db.dimensions_namespace() is None:
@@ -69,24 +70,24 @@ def migrate_stamp(
             revisions[mgr_name] = rev_id
 
         cfg: config.MigAlembicConfig | None = None
-        if manager:
-            if manager in revisions:
-                revisions = {manager: revisions[manager]}
+        if tree_name:
+            if tree_name in revisions:
+                revisions = {tree_name: revisions[tree_name]}
             else:
                 # If specified manager not in the database, it may mean that an
                 # initial "tree-root" revision needs to be added to alembic
                 # table, if that manager is defined in the migration trees.
                 cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)
                 script_info = scripts.Scripts(cfg)
-                base_revision = revision.rev_id(manager)
+                base_revision = revision.rev_id(tree_name)
                 if base_revision not in script_info.base_revisions():
-                    raise ValueError(f"Unknown manager name {manager} (not in the database or migrations)")
-                revisions = {manager: base_revision}
+                    raise ValueError(f"Unknown tree name {tree_name} (not in the database or migrations)")
+                revisions = {tree_name: base_revision}
 
         if dry_run:
             print("Will store these revisions in alembic version table:")
-            for manager, rev_id in revisions.items():
-                print(f"  {manager}: {rev_id}")
+            for tree, rev_id in revisions.items():
+                print(f"  {tree}: {rev_id}")
         else:
             if cfg is None:
                 cfg = config.MigAlembicConfig.from_mig_path(mig_path, repository=repo, db=db)

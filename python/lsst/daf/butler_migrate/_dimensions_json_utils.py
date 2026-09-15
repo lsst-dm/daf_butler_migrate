@@ -67,6 +67,22 @@ def load_historical_dimension_universe_json(universe_version: int) -> str:
     return json.dumps(dimensions)
 
 
+def latest_universe_version() -> tuple[str, int]:
+    """Return latest version of the default daf_butler universe.
+
+    Returns
+    -------
+    namespace : `str`
+        Configuration namespace (currently always "daf_butler").
+    version : `int`
+        Version number.
+    """
+    path = ResourcePath("resource://lsst.daf.butler/configs/dimensions.yaml")
+    with path.open() as input:
+        dimensions = yaml.safe_load(input)
+        return dimensions["namespace"], dimensions["version"]
+
+
 def compare_json_strings(expected: str, actual: str) -> str | None:
     """Compare two JSON strings and return a human-readable description of
     the differences.

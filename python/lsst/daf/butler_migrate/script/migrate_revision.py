@@ -92,8 +92,9 @@ def migrate_revision(mig_path: str, tree_name: str, manager_class: str, version:
     cfg = config.MigAlembicConfig.from_mig_path(mig_path)
     scripts = ScriptDirectory.from_config(cfg)
 
-    # Pass tree name to template.
+    # Pass a few items to template.
     cfg.attributes["tree_name"] = tree_name
+    cfg.attributes["manager_class"] = manager_class
     cfg.attributes["new_version"] = version
 
     # make sure that tree root is defined

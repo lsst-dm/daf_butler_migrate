@@ -43,26 +43,40 @@ class MigrationContext:
     version : `str`, optional
         Final version to store in ``butler_attributes`` table, has to be
         provided if the instance is used as context manager.
+    patch : `bool`, optional
+        If `True` (default is `False`) assume that migration is in a patch
+        tree.
+    tree_name : `str, optional
+        Name of the migration tree, used only when ``patch`` is `True` and must
+        be specified in that case.
     """
 
-    def __init__(self, manager: str | None = None, version: str | None = None) -> None:
-        self.mig_context = (
-            alembic.context.get_context()
-        )  #: Alembic migration context for the DB being migrated.
-        self.schema = (
-            self.mig_context.version_table_schema
-        )  #: Database schema name for the repository being migrated.
+    def __init__(
+        self,
+        manager: str | None = None,
+        version: str | None = None,
+        *,
+        patch: bool = False,
+        tree_name: str | None = None,
+    ) -> None:
+        # Alembic migration context for the DB being migrated.
+        self.mig_context = alembic.context.get_context()
+        # Database schema name for the repository being migrated.
+        self.schema = self.mig_context.version_table_schema
         bind = self.mig_context.bind
         assert bind is not None, "Can't run offline -- need access to database to migrate data."
         self.bind = bind  #: A SQLAlchemy connection for the database being migrated.
         self.dialect = self.bind.dialect.name  #: SQLAlchemy dialect for the database being migrated.
         self.is_sqlite = self.dialect == "sqlite"  #: True if the database being migrated is SQLite.
-        self.metadata = sqlalchemy.schema.MetaData(
-            schema=self.schema
-        )  # SQLAlchemy MetaData object for the DB being migrated.
+        # SQLAlchemy MetaData object for the DB being migrated.
+        self.metadata = sqlalchemy.schema.MetaData(schema=self.schema)
         self.attributes = ButlerAttributes(self.bind, self.schema)
         self._manager = manager
         self._version = version
+        self._patch = patch
+        if patch and tree_name is None:
+            raise TypeError("tree_name must be specified for patch migrations")
+        self._tree_name = tree_name
 
     def get_table(self, table_name: str) -> sqlalchemy.Table:
         """Create a SQLAlchemy table object for the current database.
@@ -95,5 +109,7 @@ class MigrationContext:
         """Store new manager version if no exceptions happened."""
         if exc_type is None:
             assert self._manager is not None and self._version is not None
-            self.attributes.update_manager_version(self._manager, self._version)
+            self.attributes.update_manager_version(
+                self._manager, self._version, patch=self._patch, tree_name=self._tree_name
+            )
         return False

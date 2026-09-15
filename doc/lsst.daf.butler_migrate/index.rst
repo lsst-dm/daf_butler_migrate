@@ -44,6 +44,7 @@ Links below lead to the description of existing migration scripts for each of th
    migrations/datastores.rst
    migrations/dimensions.rst
    migrations/dimensions-config.rst
+   migrations/dimensions-config-patches.rst
    migrations/opaque.rst
 
 
