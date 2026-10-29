@@ -11,7 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        variant: [
+          {"python-version": "3.11", "pinned": true},
+          {"python-version": "3.12", "pinned": true},
+          {"python-version": "3.13", "pinned": true},
+          {"python-version": "3.14", "pinned": true, "coverage": true},
+          {"python-version": "3.14", "pinned": false},
+        ]
 
     steps:
       - uses: actions/checkout@v7
@@ -19,58 +25,47 @@ jobs:
           # Need to clone everything for the git tags.
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          python-version: ${{ matrix.python-version }}
-          channels: conda-forge,defaults
-          channel-priority: strict
-          show-channel-urls: true
+          version: "0.12.5"
+          python-version: ${{ matrix.variant.python-version }}
+          enable-cache: true
 
-      - name: Install postgres for testing
-        shell: bash -l {0}
-        run: |
-          conda install postgresql psycopg2
+      # The PostgreSQL server used by testing.postgresql is preinstalled on
+      # the GitHub Ubuntu runner images.
 
-      - name: Update pip/wheel infrastructure
-        shell: bash -l {0}
-        run: |
-          conda install -y -q pip wheel
-          pip install uv
-
-      - name: Install dependencies
-        shell: bash -l {0}
-        run: |
-          uv pip install -r requirements.txt
-          uv pip install testing.postgresql
-
-      # We have two cores so we can speed up the testing with xdist
-      - name: Install pytest packages
-        shell: bash -l {0}
-        run: |
-          uv pip install \
-            pytest pytest-xdist pytest-cov
-
-      - name: List installed packages
-        shell: bash -l {0}
-        run: |
-          conda list
-          pip list -v
+      # Usually it makes sense to use library versions from the lockfile, so
+      # you are testing the PR against a known-good build.  However,
+      # we also add a non-required test against the latest version of libraries
+      # so we get early warning if there are problems.
+      - name: Upgrade all dependencies in lockfile
+        run: uv lock --upgrade
+        if: matrix.variant.pinned == false
 
       - name: Build and install
-        shell: bash -l {0}
-        run: |
-          uv pip install -v --no-deps -e .
+        run: uv sync --locked
 
+      - name: List installed packages
+        run: uv tree
+
+      # Coverage is measured in a single variant rather than all of them.
       - name: Run tests
         shell: bash -l {0}
         env:
           DAF_BUTLER_MIGRATE_DIR: .
           DAF_BUTLER_MIGRATE_MIGRATIONS: ./migrations
+          COVERAGE: ${{ matrix.variant.coverage && 'true' || 'false' }}
         run: |
-          pytest -r a -v -n 3 --cov=lsst.daf.butler_migrate --cov=tests --cov-report=xml --cov-report=term --cov-branch \
+          coverage_args=()
+          if [ "$COVERAGE" = "true" ]; then
+            coverage_args=(--cov=lsst.daf.butler_migrate --cov=tests --cov-report=xml --cov-report=term --cov-branch)
+          fi
+          uv run pytest -r a -v -n 3 "${coverage_args[@]}" \
             --junitxml=junit.xml -o junit_family=legacy
-          butler migrate -h
+          uv run butler migrate -h
       - name: Upload coverage to codecov
+        if: matrix.variant.coverage
         uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml

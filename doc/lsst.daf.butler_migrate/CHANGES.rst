@@ -1,3 +1,14 @@
+lsst-daf-butler-migrate v30.0.12 (2026-10-27)
+=============================================
+
+New Features
+------------
+
+- Added support for out-of-band migrations, such as applying patches to the schema that do not change versions in ``butler_attributes``.
+  This is implemented as a new alembic revision tree(s), and the name of the tree with the patches has to have a suffix ``-patches``.
+  The prefix of the tree name is supposed to match the name of the corresponding tree (e.g., ``dimensions-config``), but that is just a convention. (`DM-55966 <https://rubinobs.atlassian.net/browse/DM-55966>`_)
+
+
 lsst-daf-butler-migrate v30.0.8 (2026-06-09)
 ============================================
 
